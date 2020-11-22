@@ -5,15 +5,19 @@ import torch
 import time
 from torch import nn
 from downstream import SequenceClassification
-from data import GlueDataArgs, DataIterator
+from native_data import GlueDataArgs, DataIterator
 from transformers import BertConfig, BertTokenizer, BertModel
 from transformers import (
+    HfArgumentParser,
     Trainer,
+    TrainingArguments,
+    glue_output_modes,
     glue_tasks_num_labels,
+    set_seed,
 )
         
 class GlueTraingArgs:
-    def __init__(self,output_dir="/GPUFS/nsccgz_xliao_djs/tqr/result",
+    def __init__(self,output_dir="E:\\glue_training\\result",
     do_train=False,do_eval=False,do_predict=False):
         self.output_dir=output_dir
         self.do_train=do_train
@@ -24,18 +28,17 @@ logger = logging.getLogger(__name__)
 
 epochs = 1
 batch_size = 32
-bert_path="/GPUFS/nsccgz_xliao_djs/bert_multiend/bert-model/bert-base-cased"
+bert_path="E:\\bert-model\\bert-base-cased"
 task0 = "CoLA"
 task1 = "SST-2"
-data_task0 = "/GPUFS/nsccgz_xliao_djs/glue_dataset/cola"
-data_task1 = "/GPUFS/nsccgz_xliao_djs/glue_dataset/sst2"
-cache_dir = "/GPUFS/nsccgz_xliao_djs/tqr/bert-cache/"
+data_task0 = "E:\\glue_dataset\\cola"
+data_task1 = "E:\\glue_dataset\\glue_dataset/sst2"
+cache_dir = "E:\\glue_training\\bert_cache"
 
 use_gpu = torch.cuda.is_available()
 
+# TODO: GPU Training.
 def main():
-
-    # TODO: GPU Training.
     training_args = GlueTraingArgs(do_train=True)
     data_args_task0 = GlueDataArgs(task_name = task0, data_dir = data_task0)
     data_args_task1 = GlueDataArgs(task_name = task1, data_dir = data_task1)
@@ -70,7 +73,7 @@ def main():
     )
     # Model Prepare, The Bert Model has loaded the pretrained model, 
     # and these downstream structures are initialized randomly.
-    # Adding Seed for random.  referee: Trainer.train()
+    # TODO: Adding Seed for random.  referee: Trainer.train()
     
     if use_gpu:
         model_Bert = BertModel.from_pretrained(bert_path, return_dict=True).cuda()
@@ -99,6 +102,7 @@ def main():
     print(iterations)
 
     all_iters = 0
+
 
     for i in range(1, iterations+1):
     
@@ -158,16 +162,10 @@ def main():
         opt_task0.step()
         opt_task1.step()
 
-    
-    #TODO: Evaluation
-    '''
-    
-    '''
-    
-    #TODO: Saving models
-    model_Bert.save_pretrained("/GPUFS/nsccgz_xliao_djs/pretrained_model/main")
-    model_task0.save_pretrained("/GPUFS/nsccgz_xliao_djs/pretrained_model/task0")
-    model_task1.save_pretrained("/GPUFS/nsccgz_xliao_djs/pretrained_model/task1")
+    model_Bert.save_pretrained("E:\\glue_training\\pretrained_model\\main")
+    model_task0.save_pretrained("E:\\glue_training\\pretrained_model\\task0")
+    model_task1.save_pretrained("E:\\glue_training\\pretrained_model\\task1")
+
 
 if __name__ == "__main__":
     main()
