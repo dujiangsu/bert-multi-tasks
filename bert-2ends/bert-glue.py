@@ -163,10 +163,12 @@ def main():
         opt_task0.step()
         opt_task1.step()
 
+'''
 def save(model):
     model.save_model(path)
     model0.save_model(path)
     model1.save_model(path)
+'''
 
 if __name__ == "__main__":
     main()
