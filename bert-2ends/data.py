@@ -1,6 +1,6 @@
 from torch.utils.data.dataloader import DataLoader
 from torch.utils.data.sampler import RandomSampler, SequentialSampler
-from datasets import load_dataset, load_metric
+from datasets import load_dataset, load_from_disk, load_metric
 import random
 import logging
 import torch
@@ -18,8 +18,6 @@ task_to_keys = {
     "wnli": ("sentence1", "sentence2"),
 }
 
-
-
 class GlueDataArgs:
     def __init__(self, task_name, data_dir, max_length=128):
         self.task_name=task_name.lower()
@@ -27,7 +25,6 @@ class GlueDataArgs:
         self.max_seq_length=max_length
         self.overwrite_cache=False
 
-        
 class DataIterator(object):
 
     def __init__(self, data_args, tokenizer, mode, cache_dir, batch_size):
@@ -35,11 +32,10 @@ class DataIterator(object):
         logger = logging.getLogger(__name__)
         if data_args.task_name == "sst-2":
             data_args.task_name = "sst2"
-            
+
         if data_args.task_name is not None:
-            self.datasets = load_dataset(path = "/home/dujiangsu/pre-training-multi-task/datasets/glue/glue.py", 
-                                    name = data_args.task_name)
-            
+            self.datasets = load_from_disk("/GPUFS/nsccgz_xliao_djs/glue_dataset/" + data_args.task_name)
+
         if data_args.task_name is not None:
             is_regression = data_args.task_name == "stsb"
             if not is_regression:
@@ -101,9 +97,9 @@ class DataIterator(object):
         elif(mode == "test"):
             self.datasets = self.datasets["test_matched" if data_args.task_name == "mnli" else "test"]
         # Log a few random samples from the training set:
-        for index in random.sample(range(len(self.datasets)), 3):
-            logger.info(f"Sample {index} of the training set: {self.datasets[index]}.")
-           
+        # for index in random.sample(range(len(self.datasets)), 3):
+        #     logger.info(f"Sample {index} of the training set: {self.datasets[index]}.")
+        
         self.sampler = RandomSampler(self.datasets)
         self.dataloader = DataLoader(
                         self.datasets, 

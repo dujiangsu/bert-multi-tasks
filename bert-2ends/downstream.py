@@ -11,7 +11,7 @@ class SequenceClassification(BertPreTrainedModel):
         self.num_labels = config.num_labels
         
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
-        # self.classifier0 = nn.Linear(config.hidden_size, config.hidden_size)
+        self.classifier0 = nn.Linear(config.hidden_size, config.hidden_size)
         # extra FC
         self.classifier1 = nn.Linear(config.hidden_size, config.num_labels)
         
@@ -23,8 +23,8 @@ class SequenceClassification(BertPreTrainedModel):
         
         pooled_output = input[1]
         pooled_output = self.dropout(pooled_output)
-        # tmp = self.classifier0(pooled_output)
-        logits = self.classifier1(pooled_output)
+        tmp = self.classifier0(pooled_output)
+        logits = self.classifier1(tmp)
         loss = None
         
         if labels is not None:

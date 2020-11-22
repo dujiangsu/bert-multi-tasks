@@ -1,15 +1,3 @@
-# The pre-training model, e.g. Bert, trains a substantial model as basis. 
-# The fundamental model contains most knowledge of natural language.
-# Then, based on these knowledge, new structures are added and fine-tuned for
-# different kinds of tasks.
-# Because most knowledge is stored in the fundamental structure rather than these extra 
-# structures, we try to fine-tune multiple downstream tasks together.
-# Target: A fundamental pre-training model can support multiple downstream tasks.
-# Fundamental model: Bert.
-# Downstream tasks (GLUE): 
-# CoLA, SST-2, MRPC, STS-B, QQP, MNLI, QNLI, RTE, WNLI.
-# ulimit -n 2000
-
 import os
 import sys
 import logging
@@ -23,17 +11,14 @@ from transformers import (
     HfArgumentParser,
     Trainer,
     TrainingArguments,
-    #glue_compute_metrics,
+    glue_compute_metrics,
     glue_output_modes,
     glue_tasks_num_labels,
     set_seed,
 )
-
-
-
         
 class GlueTraingArgs:
-    def __init__(self,output_dir="/home/dujiangsu/output/results",
+    def __init__(self,output_dir="/GPUFS/nsccgz_xliao_djs/tqr/result",
     do_train=False,do_eval=False,do_predict=False):
         self.output_dir=output_dir
         self.do_train=do_train
@@ -42,17 +27,16 @@ class GlueTraingArgs:
     
 logger = logging.getLogger(__name__)
 
-
-epochs = 20
+epochs = 3
 batch_size = 32
-bert_path="/home/dujiangsu/bert-base-cased"
-task0 = "SST-2"
-task1 = "QQP"
-data_task0 = "/home/dujiangsu/glue_dataset/SST-2"
-data_task1 = "/home/dujiangsu/glue_dataset/QQP"
-cache_dir = "/home/dujiangsu/output/"
+bert_path="/GPUFS/nsccgz_xliao_djs/bert_multiend/bert-model/bert-base-cased"
+task0 = "CoLA"
+task1 = "SST-2"
+data_task0 = "/GPUFS/nsccgz_xliao_djs/glue_dataset/cola"
+data_task1 = "/GPUFS/nsccgz_xliao_djs/glue_dataset/sst2"
+cache_dir = "/GPUFS/nsccgz_xliao_djs/tqr/bert-cache/"
 
-use_gpu=torch.cuda.is_available()
+use_gpu = torch.cuda.is_available()
 
 # TODO: GPU Training.
 def main():
@@ -81,7 +65,6 @@ def main():
         finetuning_task=data_args_task0.task_name,
         cache_dir=cache_dir
     )
-    
     
     config_task1 = BertConfig.from_pretrained(
         bert_path,
@@ -116,13 +99,12 @@ def main():
     opt_task1 = torch.optim.AdamW(model_task1.parameters(), lr=0.0001)
     
     iterations = (epochs * len(data_iterator_train_task1) // batch_size) + 1  
-    scheduler = torch.optim.lr_scheduler.LambdaLR(opt_bert,
-                                                lambda step: (1.0-step/iterations))
+    scheduler = torch.optim.lr_scheduler.LambdaLR(opt_bert, lambda step: (1.0-step/iterations))
     print(iterations)
-    
+
     all_iters = 0
-  
-    
+
+
     for i in range(1, iterations+1):
     
         all_iters += 1        
@@ -159,15 +141,17 @@ def main():
         
         loss0 = model_task0(input=output_inter0, labels=label0)[0]
         loss1 = model_task1(input=output_inter1, labels=label1)[0]
+
+        ratio = loss0/loss1
+        weight0 = (2*ratio) / (1+ratio) # solution of equations: weight0/weight1 == loss0/loss1 & weight0+weight1 == 2
+        weight1 = 2 - weight0
         
-        loss = loss0+loss1
+        loss = loss0*weight0 + loss1*weight1
         
         # printInfo = 'TRAIN ITER {}: loss ={:.6f}, loss0={:.6f}, loss1={:.6f}'.format(all_iters, loss, loss0, loss1)
-        printInfo = 'TOTAL/Train {}/{}:lr:{} , loss0={:.6f}, loss0={:.6f}, loss1={:.6f}'.format(all_iters, iterations, scheduler.get_lr(), loss, loss0, loss1)
+        printInfo = 'TOTAL/Train {}/{}:lr:{}, loss={:.6f}, loss0={:.6f}, loss1={:.6f}'.format(all_iters, iterations, scheduler.get_lr(), loss, loss0, loss1)
         logging.info(printInfo)
         
-        # print(loss)
-        # print(all_iters)
         
         opt_bert.zero_grad()
         opt_task0.zero_grad()
@@ -179,8 +163,11 @@ def main():
         opt_task0.step()
         opt_task1.step()
 
-
-
+def save(model):
+    model.save_model(path)
+    model0.save_model(path)
+    model1.save_model(path)
 
 if __name__ == "__main__":
     main()
+
