@@ -6,6 +6,7 @@ import logging
 import torch
 from transformers import default_data_collator
 
+dataset_dir = "/GPUFS/nsccgz_xliao_djs/glue_dataset"
 task_to_keys = {
     "cola": ("sentence", None),
     "mnli": ("premise", "hypothesis"),
@@ -26,7 +27,6 @@ class GlueDataArgs:
         self.overwrite_cache=False
 
 class DataIterator(object):
-
     def __init__(self, data_args, tokenizer, mode, cache_dir, batch_size):
     
         logger = logging.getLogger(__name__)
@@ -34,7 +34,7 @@ class DataIterator(object):
             data_args.task_name = "sst2"
 
         if data_args.task_name is not None:
-            self.datasets = load_from_disk("/GPUFS/nsccgz_xliao_djs/glue_dataset/" + data_args.task_name)
+            self.datasets = load_from_disk(dataset_dir + "/" + data_args.task_name)
 
         if data_args.task_name is not None:
             is_regression = data_args.task_name == "stsb"
@@ -92,7 +92,7 @@ class DataIterator(object):
         
         if(mode == "train"):
             self.datasets = self.datasets["train"]
-        elif(mode == "dev"):
+        elif(mode == "val"):
             self.datasets = self.datasets["validation_matched" if data_args.task_name == "mnli" else "validation"]
         elif(mode == "test"):
             self.datasets = self.datasets["test_matched" if data_args.task_name == "mnli" else "test"]
