@@ -18,6 +18,9 @@ task_to_keys = {
     "stsb": ("sentence1", "sentence2"),
     "wnli": ("sentence1", "sentence2"),
 }
+task_to_metrics = {
+    "cola": 
+}
 
 class GlueDataArgs:
     def __init__(self, task_name, data_dir, max_length=128):
@@ -92,7 +95,7 @@ class DataIterator(object):
         
         if(mode == "train"):
             self.datasets = self.datasets["train"]
-        elif(mode == "val"):
+        elif(mode == "dev"):
             self.datasets = self.datasets["validation_matched" if data_args.task_name == "mnli" else "validation"]
         elif(mode == "test"):
             self.datasets = self.datasets["test_matched" if data_args.task_name == "mnli" else "test"]
@@ -123,3 +126,10 @@ class DataIterator(object):
 
     def __len__(self):
         return len(self.datasets)
+
+
+def compute_metrics(task_name):
+    
+    
+
+
