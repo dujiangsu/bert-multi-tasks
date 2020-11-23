@@ -6,7 +6,7 @@ import logging
 import torch
 from transformers import default_data_collator
 
-dataset_dir = "/GPUFS/nsccgz_xliao_djs/glue_dataset"
+dataset_dir = "/GPUFS/nsccgz_xliao_djs/bert-multi-tasks/glue_dataset"
 task_to_keys = {
     "cola": ("sentence", None),
     "mnli": ("premise", "hypothesis"),

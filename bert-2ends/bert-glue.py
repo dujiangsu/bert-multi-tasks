@@ -10,7 +10,7 @@ from transformers import BertConfig, BertTokenizer, BertModel
 from transformers import glue_tasks_num_labels
         
 class GlueTrainArgs:
-    def __init__(self, output_dir="/GPUFS/nsccgz_xliao_djs/tqr/result",
+    def __init__(self, output_dir="/GPUFS/nsccgz_xliao_djs/bert-multi-tasks/result",
     do_train=False, do_eval=False, do_predict=False):
         self.output_dir = output_dir
         self.do_train = do_train
@@ -23,13 +23,13 @@ epochs = 1
 batch_size = 32
 learning_rate = 0.0001
 eval_interval = 30
-bert_path = "/GPUFS/nsccgz_xliao_djs/bert_multiend/bert-model/bert-base-cased"
+bert_path = "/GPUFS/nsccgz_xliao_djs/bert-multi-tasks/bert-model/bert-base-cased"
 task0 = "CoLA"
 task1 = "SST-2"
-data_task0 = "/GPUFS/nsccgz_xliao_djs/glue_dataset/cola"
-data_task1 = "/GPUFS/nsccgz_xliao_djs/glue_dataset/sst2"
-cache_dir = "/GPUFS/nsccgz_xliao_djs/tqr/bert-cache/"
-model_save_dir = "/GPUFS/nsccgz_xliao_djs/pretrained_model/"
+data_task0 = "/GPUFS/nsccgz_xliao_djs/bert-multi-tasks/glue_dataset/cola"
+data_task1 = "/GPUFS/nsccgz_xliao_djs/bert-multi-tasks/glue_dataset/sst2"
+cache_dir = "/GPUFS/nsccgz_xliao_djs/bert-multi-tasks/cache/"
+model_save_dir = "/GPUFS/nsccgz_xliao_djs/bert-multi-tasks/saved_model/"
 
 use_gpu = torch.cuda.is_available()
 
@@ -163,31 +163,20 @@ def main():
 
 def validate(main_model, sub_model, dataset):
     
+    main_model.eval()
+    sub_model.eval()
     
     for i in range(1, len(dataset)+1):
-
-        main_model.eval()
-        sub_model.eval()
+        
         data = dataset.next()
-
-        if use_gpu:        
-            input_ids = data['input_ids'].cuda()
-            attention_mask = data['attention_mask'].cuda()
-            token_type_ids = data['token_type_ids'].cuda()
-            label = data['labels'].cuda()
-        else:
-            input_ids = data['input_ids']
-            attention_mask = data['attention_mask']
-            token_type_ids = data['token_type_ids']    
-            label = data['labels']
         
         output_inter = main_model(input_ids=input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids, return_dict=True)
         loss = sub_model(input=output_inter, labels=label)[0]
 
 
 
-    logInfo = "eval:"
-    logging.info(logInfo)
+    printInfo = "Evaluate {}: lr:{}, loss={:.6f}, loss0={:.6f}, loss1={:.6f}".format(all_iters, iterations, scheduler.get_lr(), loss, loss0, loss1)
+    logging.info(printInfo)
 
     
 
