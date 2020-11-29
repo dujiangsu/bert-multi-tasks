@@ -32,13 +32,13 @@ from transformers import (
 
 
         
-class GlueTraingArgs:
-    def __init__(self,output_dir="/home/dujiangsu/output/results",
-    do_train=False,do_eval=False,do_predict=False):
-        self.output_dir=output_dir
-        self.do_train=do_train
-        self.do_eval=do_eval
-        self.do_predict=do_predict
+# class GlueTraingArgs:
+    # def __init__(self,output_dir="/home/dujiangsu/output/results",
+    # do_train=False,do_eval=False,do_predict=False):
+        # self.output_dir=output_dir
+        # self.do_train=do_train
+        # self.do_eval=do_eval
+        # self.do_predict=do_predict
     
 logger = logging.getLogger(__name__)
 
@@ -56,7 +56,7 @@ use_gpu=torch.cuda.is_available()
 
 # TODO: GPU Training.
 def main():
-    training_args = GlueTraingArgs(do_train=True)
+    #training_args = GlueTraingArgs(do_train=True)
     data_args_task0 = GlueDataArgs(task_name = task0, data_dir = data_task0)
     data_args_task1 = GlueDataArgs(task_name = task1, data_dir = data_task1)
     
