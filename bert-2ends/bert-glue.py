@@ -89,6 +89,8 @@ def main():
         finetuning_task=data_args_task1.task_name,
         cache_dir=cache_dir
     )
+    
+    print(config_task1)
     # Model Prepare, The Bert Model has loaded the pretrained model, 
     # and these downstream structures are initialized randomly.
     # TODO: Adding Seed for random.  referee: Trainer.train()
@@ -120,9 +122,33 @@ def main():
                                                 lambda step: (1.0-step/iterations))
     print(iterations)
     
+    
+    data0 = data_iterator_train_task0.next()
+    
+    print(data0)
+    
+    input_ids0=data0['input_ids']
+    attention_mask0=data0['attention_mask']
+    token_type_ids0=data0['token_type_ids']  
+    label0=data0['labels']
+    
+    print(input_ids0)
+    print(input_ids0.size())
+    print(input_ids0.type())
+    print(attention_mask0)
+    print(attention_mask0.size())
+    print(attention_mask0.type())
+    print(token_type_ids0)
+    print(token_type_ids0.size())
+    print(token_type_ids0.type())
+    print(label0)
+    print(label0.size())
+    print(label0.type())
+    
+    
     all_iters = 0
   
-    
+'''    
     for i in range(1, iterations+1):
     
         all_iters += 1        
@@ -180,7 +206,7 @@ def main():
         opt_task1.step()
 
 
-
+'''
 
 if __name__ == "__main__":
     main()

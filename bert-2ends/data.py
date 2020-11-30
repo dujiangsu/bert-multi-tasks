@@ -37,7 +37,7 @@ class DataIterator(object):
             data_args.task_name = "sst2"
             
         if data_args.task_name is not None:
-            self.datasets = load_dataset(path = "/home/dujiangsu/pre-training-multi-task/datasets/glue/glue.py", 
+            self.datasets = load_dataset(path = "/home/dujiangsu/bert-multi-tasks/datasets/glue/glue.py", 
                                     name = data_args.task_name)
             
         if data_args.task_name is not None:
