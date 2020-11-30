@@ -10,15 +10,17 @@ from transformers import BertConfig, BertTokenizer, BertModel
 def main():
 
 # Env
-    use_gpu=torch.cuda.is_available()
+    use_gpu=False
+    #torch.cuda.is_available()
     
-    
+    # batchsize = [1,4,8,16,32,64,128,256]
+
 # Data Augment
-    input_np = np.random.randint(1000, size=(32,128))
+    input_np = np.random.randint(1000, size=(1,512))
     
     input_ids=torch.from_numpy(input_np).long()
-    attention_mask=torch.zeros(32, 128).long()
-    token_type_ids=torch.ones(32, 128).long()
+    attention_mask=torch.zeros(1, 512).long()
+    token_type_ids=torch.ones(1, 512).long()
     
     if use_gpu:
         input_ids=input_ids.cuda()
@@ -45,13 +47,13 @@ def main():
     
 # Eval with Speed Record
     
-    t1 = time.time()
     model.eval()
     
+    t1 = time.time()
     with torch.no_grad():
-        for i in range(1000):
+        for i in range(512):
+            print(i)
             output = model(input_ids=input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids)
-
     print('val_time = {:.6f}'.format(time.time() - t1))
     
 
