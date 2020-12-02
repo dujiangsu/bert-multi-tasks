@@ -130,6 +130,3 @@ class DataIterator(object):
 
 def compute_metrics(task_name):
     
-    
-
-
