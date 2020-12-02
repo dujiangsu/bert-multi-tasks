@@ -196,7 +196,7 @@ def evaluate(main_model, sub_model, dataset, metrics):
         eval_result = metrics.result(label, preds)
 
 
-    printInfo = "*** Evaluate Result: loss={:.6f}, eval={:s}: {:.6f} ***".format(loss, eval_result[0], eval_result[1])
+    printInfo = "*** Evaluate Result: loss={:.6f}, eval={:s}: {:.6f} ***".format(loss, eval_result.keys(), eval_result.values())
     logging.info(printInfo)
     
 
