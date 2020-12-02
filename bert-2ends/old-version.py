@@ -7,24 +7,21 @@ from torch import nn
 from downstream import SequenceClassification
 from data import GlueDataArgs, DataIterator, ComputeMetrics
 from transformers import BertConfig, BertTokenizer, BertModel
-from transformers import (
-    glue_tasks_num_labels,
-    # glue_compute_metrics
-)
+from transformers import glue_tasks_num_labels
         
-class GlueTrainArgs:
-    def __init__(self, output_dir="/GPUFS/nsccgz_xliao_djs/bert-multi-tasks/result",
-    do_train=False, do_eval=False, do_predict=False):
-        self.output_dir = output_dir
-        self.do_train = do_train
-        self.do_eval = do_eval
-        self.do_predict = do_predict
+# class GlueTraingArgs:
+    # def __init__(self,output_dir="/home/dujiangsu/output/results",
+    # do_train=False,do_eval=False,do_predict=False):
+        # self.output_dir=output_dir
+        # self.do_train=do_train
+        # self.do_eval=do_eval
+        # self.do_predict=do_predict
     
 logger = logging.getLogger(__name__)
 
 epochs = 10
 batch_size = 32
-learning_rate = 0.0001
+learning_rate = 0.00001
 eval_interval = 30
 bert_path = "/home/dujiangsu/bert-base-cased"
 task0 = "CoLA"
@@ -37,10 +34,10 @@ model_save_dir = "/home/dujiangsu/tqr/bert-multi-tasks/saved_model/"
 use_gpu = torch.cuda.is_available()
 
 def main():
-    training_args = GlueTrainArgs(do_train=True)
-    data_args_task0 = GlueDataArgs(task_name=task0, data_dir=data_task0)
-    data_args_task1 = GlueDataArgs(task_name=task1, data_dir=data_task1)
-
+    #training_args = GlueTraingArgs(do_train=True)
+    data_args_task0 = GlueDataArgs(task_name = task0, data_dir = data_task0)
+    data_args_task1 = GlueDataArgs(task_name = task1, data_dir = data_task1)
+    
     if use_gpu:
         print("Training on GPU.")
     
@@ -69,7 +66,7 @@ def main():
         finetuning_task = data_args_task1.task_name,
         cache_dir = cache_dir
     )
-    
+
     if use_gpu:
         model_Bert = BertModel.from_pretrained(bert_path, return_dict=True).cuda()
         model_task0 = SequenceClassification(config_task0).cuda()
@@ -86,12 +83,8 @@ def main():
     data_iterator_eval_task0 = DataIterator(data_args_task1, tokenizer=tokenizer, mode="dev", cache_dir=cache_dir, batch_size=batch_size)
     data_iterator_eval_task1 = DataIterator(data_args_task1, tokenizer=tokenizer, mode="dev", cache_dir=cache_dir, batch_size=batch_size)
     logger.info("*** Dataset Ready ***")
-
-    data=data_iterator_train_task0.next()
-    # print(data)
-    # print(data.keys())
     
-    opt_main = torch.optim.AdamW(model_Bert.parameters(), lr=learning_rate)
+    opt_bert = torch.optim.AdamW(model_Bert.parameters(), lr=learning_rate)
     opt_task0 = torch.optim.AdamW(model_task0.parameters(), lr=learning_rate) 
     opt_task1 = torch.optim.AdamW(model_task1.parameters(), lr=learning_rate)
 
@@ -101,11 +94,11 @@ def main():
     # iterations = (epochs * len(data_iterator_train_task1) // batch_size) + 1
     iterations = 200
     
-    scheduler = torch.optim.lr_scheduler.LambdaLR(opt_main, lambda step: (1.0-step/iterations))
-
-    
+    scheduler = torch.optim.lr_scheduler.LambdaLR(opt_bert, lambda step: (1.0-step/iterations))
+    data0 = data_iterator_train_task0.next()
+     
     all_iters = 0
-
+   
     for i in range(1, iterations+1):
         all_iters += 1        
         scheduler.step()
@@ -114,7 +107,6 @@ def main():
         model_task1.train()
         data0 = data_iterator_train_task0.next()
         data1 = data_iterator_train_task1.next()
-        # print()
 
         if use_gpu:        
             input_ids0 = data0['input_ids'].cuda()
@@ -134,7 +126,7 @@ def main():
             attention_mask1 = data1['attention_mask']
             token_type_ids1 = data1['token_type_ids']
             label1 = data1['labels']
-        
+
         output_inter0 = model_Bert(input_ids=input_ids0, attention_mask=attention_mask0, token_type_ids=token_type_ids0, return_dict=True)
         output_inter1 = model_Bert(input_ids=input_ids1, attention_mask=attention_mask1, token_type_ids=token_type_ids1, return_dict=True)
         
@@ -159,8 +151,8 @@ def main():
         opt_task1.step()
 
         if (i % eval_interval == 0):
-            evaluate(model_Bert, model_task0, data_iterator_eval_task0, metrics_task0)
-            evaluate(model_Bert, model_task1, data_iterator_eval_task1, metrics_task1)
+            evaluate(model_Bert, model_task0, data_iterator_eval_task0)
+            evaluate(model_Bert, model_task1, data_iterator_eval_task1)
 
     evaluate(model_Bert, model_task0, data_iterator_eval_task0, metrics_task0)
     evaluate(model_Bert, model_task1, data_iterator_eval_task1, metrics_task1)

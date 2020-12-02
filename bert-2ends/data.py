@@ -5,8 +5,10 @@ import random
 import logging
 import torch
 from transformers import default_data_collator
+from sklearn.metrics import f1_score, matthews_corrcoef
+from scipy.stats import pearsonr, spearmanr
 
-dataset_dir = "/GPUFS/nsccgz_xliao_djs/bert-multi-tasks/glue_dataset"
+dataset_dir = "/home/dujiangsu/tqr/glue_dataset"
 task_to_keys = {
     "cola": ("sentence", None),
     "mnli": ("premise", "hypothesis"),
@@ -19,7 +21,15 @@ task_to_keys = {
     "wnli": ("sentence1", "sentence2"),
 }
 task_to_metrics = {
-    "cola": 
+    "cola": "matthewscorr",
+    "mnli": "f1_score",
+    "mrpc": "accuracy",
+    "qnli": "accuracy",
+    "qqp": "f1_score",
+    "rte": "accuracy",
+    "sst2": "accuracy",
+    "stsb": "pearsonscorr",
+    "wnli": "accuracy",
 }
 
 class GlueDataArgs:
@@ -127,6 +137,53 @@ class DataIterator(object):
     def __len__(self):
         return len(self.datasets)
 
+class ComputeMetrics():
+    def __init__(self, dataArgs):
+        self.task_name = dataArgs.task_name
 
-def compute_metrics(task_name):
-    
+    def simple_accuracy(preds, labels):
+        return (preds == labels).mean()
+
+    def acc_and_f1(preds, labels):
+        acc = simple_accuracy(preds, labels)
+        f1 = f1_score(y_true=labels, y_pred=preds)
+        return {
+            "acc": acc,
+            "f1": f1,
+            "acc_and_f1": (acc + f1) / 2,
+        }
+
+    def pearson_and_spearman(preds, labels):
+        pearson_corr = pearsonr(preds, labels)[0]
+        spearman_corr = spearmanr(preds, labels)[0]
+        return {
+            "pearson": pearson_corr,
+            "spearmanr": spearman_corr,
+            "corr": (pearson_corr + spearman_corr) / 2,
+        }
+        
+    def result(labels, preds):
+        if task_name == "cola":
+            return {"mcc": matthews_corrcoef(labels, preds)}
+        elif task_name == "sst-2":
+            return {"acc": simple_accuracy(preds, labels)}
+        elif task_name == "mrpc":
+            return acc_and_f1(preds, labels)
+        elif task_name == "sts-b":
+            return pearson_and_spearman(preds, labels)
+        elif task_name == "qqp":
+            return acc_and_f1(preds, labels)
+        elif task_name == "mnli":
+            return {"mnli/acc": simple_accuracy(preds, labels)}
+        elif task_name == "mnli-mm":
+            return {"mnli-mm/acc": simple_accuracy(preds, labels)}
+        elif task_name == "qnli":
+            return {"acc": simple_accuracy(preds, labels)}
+        elif task_name == "rte":
+            return {"acc": simple_accuracy(preds, labels)}
+        elif task_name == "wnli":
+            return {"acc": simple_accuracy(preds, labels)}
+        elif task_name == "hans":
+            return {"acc": simple_accuracy(preds, labels)}
+        else:
+            raise KeyError(task_name)
