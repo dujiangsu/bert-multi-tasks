@@ -26,9 +26,8 @@ task_to_keys = {
 
 # max_length is a hyperparameter
 class GlueDataArgs:
-    def __init__(self, task_name, data_dir, max_length=128, pad_to_max_length=True):
+    def __init__(self, task_name, max_length=128, pad_to_max_length=True):
         self.task_name=task_name.lower()
-        self.data_dir=data_dir
         self.max_seq_length=max_length
         self.overwrite_cache=False
         self.pad_to_max_length=pad_to_max_length
@@ -135,5 +134,68 @@ class DataIterator(object):
     def __len__(self):
         return len(self.datasets)
 
-def ComputeMetrics():
-    # TODO
+class ComputeMetrics():
+    def __init__(self, dataArgs):
+        self.task_name = dataArgs.task_name
+        
+    def simple_accuracy(preds, labels):
+        return (preds == labels).mean()
+        
+    def acc_and_f1(preds, labels):
+        acc = simple_accuracy(preds, labels)
+        f1 = f1_score(y_true=labels, y_pred=preds)
+        return {
+            "acc": acc,
+            "f1": f1,
+            "acc_and_f1": (acc + f1) / 2,
+        }
+        
+    def pearson_and_spearman(preds, labels):
+        pearson_corr = pearsonr(preds, labels)[0]
+        spearman_corr = spearmanr(preds, labels)[0]
+        return {
+            "pearson": pearson_corr,
+            "spearmanr": spearman_corr,
+            "corr": (pearson_corr + spearman_corr) / 2,
+        }
+        
+            
+    def result(labels, preds):
+        if task_name == "cola":
+            return {"mcc": matthews_corrcoef(labels, preds)}
+        elif task_name == "sst-2":
+            return {"acc": simple_accuracy(preds, labels)}
+        elif task_name == "mrpc":
+            return acc_and_f1(preds, labels)
+        elif task_name == "sts-b":
+            return pearson_and_spearman(preds, labels)
+        elif task_name == "qqp":
+            return acc_and_f1(preds, labels)
+        elif task_name == "mnli":
+            return {"mnli/acc": simple_accuracy(preds, labels)}
+        elif task_name == "mnli-mm":
+            return {"mnli-mm/acc": simple_accuracy(preds, labels)}
+        elif task_name == "qnli":
+            return {"acc": simple_accuracy(preds, labels)}
+        elif task_name == "rte":
+            return {"acc": simple_accuracy(preds, labels)}
+        elif task_name == "wnli":
+            return {"acc": simple_accuracy(preds, labels)}
+        elif task_name == "hans":
+            return {"acc": simple_accuracy(preds, labels)}
+        else:
+            raise KeyError(task_name)    
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
