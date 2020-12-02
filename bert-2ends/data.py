@@ -4,7 +4,12 @@ from datasets import load_dataset, load_metric
 import random
 import logging
 import torch
+from sklearn.metrics import f1_score, matthews_corrcoef
+from scipy.stats import pearsonr, spearmanr
 from transformers import default_data_collator
+
+# use dataset in disk rather than from the internet
+dataset_dir = "/home/dujiangsu/tqr/glue_dataset"
 
 task_to_keys = {
     "cola": ("sentence", None),
@@ -19,17 +24,17 @@ task_to_keys = {
 }
 
 
-
+# max_length is a hyperparameter
 class GlueDataArgs:
-    def __init__(self, task_name, data_dir, max_length=128):
+    def __init__(self, task_name, data_dir, max_length=128, pad_to_max_length=True):
         self.task_name=task_name.lower()
         self.data_dir=data_dir
         self.max_seq_length=max_length
         self.overwrite_cache=False
+        self.pad_to_max_length=pad_to_max_length
 
         
 class DataIterator(object):
-
     def __init__(self, data_args, tokenizer, mode, cache_dir, batch_size):
     
         logger = logging.getLogger(__name__)
@@ -37,8 +42,8 @@ class DataIterator(object):
             data_args.task_name = "sst2"
             
         if data_args.task_name is not None:
-            self.datasets = load_dataset(path = "/home/dujiangsu/bert-multi-tasks/datasets/glue/glue.py", 
-                                    name = data_args.task_name)
+            self.datasets = load_from_disk(dataset_dir + "/" + data_args.task_name)            
+            # load_dataset(path = "/datasets/glue/glue.py", name = data_args.task_name)
             
         if data_args.task_name is not None:
             is_regression = data_args.task_name == "stsb"
@@ -72,8 +77,10 @@ class DataIterator(object):
                     sentence1_key, sentence2_key = non_label_column_names[0], None    
             
         # Padding strategy
-        padding = "max_length"
-        max_length = data_args.max_seq_length
+        if data_args.pad_to_max_length == True:
+            padding = "max_length"
+            max_length = data_args.max_seq_length
+        # else: # TODO
    
         
         # Some models have set the order of the labels to use, so let's make sure we do use it.
@@ -101,7 +108,7 @@ class DataIterator(object):
         elif(mode == "test"):
             self.datasets = self.datasets["test_matched" if data_args.task_name == "mnli" else "test"]
         # Log a few random samples from the training set:
-        for index in random.sample(range(len(self.datasets)), 3):
+        for index in random.sample(range(len(self.datasets)), 1):
             logger.info(f"Sample {index} of the training set: {self.datasets[index]}.")
            
         self.sampler = RandomSampler(self.datasets)
@@ -127,3 +134,6 @@ class DataIterator(object):
 
     def __len__(self):
         return len(self.datasets)
+
+def ComputeMetrics():
+    # TODO
