@@ -3,6 +3,15 @@
 #### 介绍
 Make a single pre-trained NLP model work for multi-tasks.
 
+
+#### TODO
+
+
+#### Completed
+1. use datasets as dataloader.  √
+2. glue evaluation.             √
+3. model checkpoint.            √
+
 #### 软件架构
 软件架构说明
 
