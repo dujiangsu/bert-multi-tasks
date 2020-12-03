@@ -166,24 +166,24 @@ class ComputeMetrics():
         if self.task_name == "cola":
             return {"mcc": matthews_corrcoef(labels, preds)}
         elif self.task_name == "sst-2":
-            return {"acc": simple_accuracy(preds, labels)}
+            return {"acc": self.simple_accuracy(preds, labels)}
         elif self.task_name == "mrpc":
-            return acc_and_f1(preds, labels)
+            return self.acc_and_f1(preds, labels)
         elif self.task_name == "sts-b":
-            return pearson_and_spearman(preds, labels)
+            return self.pearson_and_spearman(preds, labels)
         elif self.task_name == "qqp":
-            return acc_and_f1(preds, labels)
+            return self.acc_and_f1(preds, labels)
         elif self.task_name == "mnli":
-            return {"mnli/acc": simple_accuracy(preds, labels)}
+            return {"mnli/acc": self.simple_accuracy(preds, labels)}
         elif self.task_name == "mnli-mm":
-            return {"mnli-mm/acc": simple_accuracy(preds, labels)}
+            return {"mnli-mm/acc": self.simple_accuracy(preds, labels)}
         elif self.task_name == "qnli":
-            return {"acc": simple_accuracy(preds, labels)}
+            return {"acc": self.simple_accuracy(preds, labels)}
         elif self.task_name == "rte":
-            return {"acc": simple_accuracy(preds, labels)}
+            return {"acc": self.simple_accuracy(preds, labels)}
         elif self.task_name == "wnli":
-            return {"acc": simple_accuracy(preds, labels)}
+            return {"acc": self.simple_accuracy(preds, labels)}
         elif self.task_name == "hans":
-            return {"acc": simple_accuracy(preds, labels)}
+            return {"acc": self.simple_accuracy(preds, labels)}
         else:
             raise KeyError(self.task_name)
