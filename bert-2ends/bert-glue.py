@@ -194,9 +194,10 @@ def evaluate(main_model, sub_model, dataset, metrics):
         output = sub_model(input=output_inter, labels=label, return_dict=True)
         loss = output[0]
         label = label.cpu().numpy()
-        preds = output.logits.t()[0].cpu().numpy().astype(int) # It should be preds[i]=1 if it>0 else preds[i]=0
-        # for i in preds:
-        #     i = 1 if i > 0 else 0
+
+        # preds softmax
+        preds = output.logits.t()[0].cpu().numpy().astype(int) # It should be preds[i]=1 if preds[i]>0 else preds[i]=0
+
         eval_result = metrics.result(label, preds)
 
     printInfo = "*** Evaluate Result of {:s} ***".format(metrics.task_name)
