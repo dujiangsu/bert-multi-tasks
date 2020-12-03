@@ -71,7 +71,7 @@ def main():
     fh.setFormatter(logging.Formatter(log_format))
     logging.getLogger().addHandler(fh)
     
-    logger.info("Tasks:" task0 + "," + task1)
+    logger.info("Tasks:" + task0 + "," + task1)
     
     config_task0 = BertConfig.from_pretrained(
         bert_path,
@@ -217,31 +217,36 @@ def main():
 
 
 def evaluate(main_model, sub_model, dataset, metrics):
-
-    for i in range(1, len(dataset)+1):
+    with torch.no_grad():
+        for i in range(1, len(dataset)+1):
+            main_model.eval()
+            sub_model.eval()
+            data = dataset.next()
         
-        main_model.eval()
-        sub_model.eval()
-        data = dataset.next()
-        
-        if use_gpu:        
-            input_ids = data['input_ids'].cuda()
-            attention_mask = data['attention_mask'].cuda()
-            token_type_ids = data['token_type_ids'].cuda()
-            label = data['labels'].cuda()
-        else:
-            input_ids = data['input_ids']
-            attention_mask = data['attention_mask']
-            token_type_ids = data['token_type_ids']
-            label = data['labels']
+            if use_gpu:        
+                input_ids = data['input_ids'].cuda()
+                attention_mask = data['attention_mask'].cuda()
+                token_type_ids = data['token_type_ids'].cuda()
+                label = data['labels'].cuda()
+            else:
+                input_ids = data['input_ids']
+                attention_mask = data['attention_mask']
+                token_type_ids = data['token_type_ids']
+                label = data['labels']
             
-        output_inter = main_model(input_ids=input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids, return_dict=True)
-        loss = sub_model(input=output_inter, labels=label)[0]
-        preds = output_inter
-        eval_result = metrics.result(label, preds)
-
-    printInfo = "*** Evaluate Result: loss={:.6f}, eval={:s}: {:.6f} ***".format(loss, eval_result.keys(), eval_result.values())
-    logging.info(printInfo)
+            output_inter = main_model(input_ids=input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids, return_dict=True)
+            output = sub_model(input=output_inter, labels=label)
+            loss = output[0]
+            label = label.cpu().numpy()
+            
+    # TODO preds softmax
+            
+    # preds = output.logits.t()[0].cpu().numpy().astype(int) # It should be preds[i]=1 if preds[i]>0 else preds[i]=0
+            
+    # eval_result = metrics.result(label, preds)
+    
+    # printInfo = "*** Evaluate Result: loss={:.6f}, eval={:s}: {:.6f} ***".format(loss, eval_result.keys(), eval_result.values())
+    # logging.info(printInfo)
 
 
 if __name__ == "__main__":

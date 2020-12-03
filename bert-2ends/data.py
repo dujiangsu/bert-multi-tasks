@@ -138,11 +138,11 @@ class ComputeMetrics():
     def __init__(self, dataArgs):
         self.task_name = dataArgs.task_name
         
-    def simple_accuracy(preds, labels):
+    def simple_accuracy(self, preds, labels):
         return (preds == labels).mean()
         
-    def acc_and_f1(preds, labels):
-        acc = simple_accuracy(preds, labels)
+    def acc_and_f1(self, preds, labels):
+        acc = self.simple_accuracy(preds, labels)
         f1 = f1_score(y_true=labels, y_pred=preds)
         return {
             "acc": acc,
@@ -150,7 +150,7 @@ class ComputeMetrics():
             "acc_and_f1": (acc + f1) / 2,
         }
         
-    def pearson_and_spearman(preds, labels):
+    def pearson_and_spearman(self, preds, labels):
         pearson_corr = pearsonr(preds, labels)[0]
         spearman_corr = spearmanr(preds, labels)[0]
         return {
@@ -160,31 +160,31 @@ class ComputeMetrics():
         }
         
             
-    def result(labels, preds):
-        if task_name == "cola":
+    def result(self, labels, preds):
+        if self.task_name == "cola":
             return {"mcc": matthews_corrcoef(labels, preds)}
-        elif task_name == "sst-2":
-            return {"acc": simple_accuracy(preds, labels)}
-        elif task_name == "mrpc":
-            return acc_and_f1(preds, labels)
-        elif task_name == "sts-b":
-            return pearson_and_spearman(preds, labels)
-        elif task_name == "qqp":
-            return acc_and_f1(preds, labels)
-        elif task_name == "mnli":
-            return {"mnli/acc": simple_accuracy(preds, labels)}
-        elif task_name == "mnli-mm":
-            return {"mnli-mm/acc": simple_accuracy(preds, labels)}
-        elif task_name == "qnli":
-            return {"acc": simple_accuracy(preds, labels)}
-        elif task_name == "rte":
-            return {"acc": simple_accuracy(preds, labels)}
-        elif task_name == "wnli":
-            return {"acc": simple_accuracy(preds, labels)}
-        elif task_name == "hans":
-            return {"acc": simple_accuracy(preds, labels)}
+        elif self.task_name == "sst-2":
+            return {"acc": self.simple_accuracy(preds, labels)}
+        elif self.task_name == "mrpc":
+            return self.acc_and_f1(preds, labels)
+        elif self.task_name == "sts-b":
+            return self.pearson_and_spearman(preds, labels)
+        elif self.task_name == "qqp":
+            return self.acc_and_f1(preds, labels)
+        elif self.task_name == "mnli":
+            return {"mnli/acc": self.simple_accuracy(preds, labels)}
+        elif self.task_name == "mnli-mm":
+            return {"mnli-mm/acc": self.simple_accuracy(preds, labels)}
+        elif self.task_name == "qnli":
+            return {"acc": self.simple_accuracy(preds, labels)}
+        elif self.task_name == "rte":
+            return {"acc": self.simple_accuracy(preds, labels)}
+        elif self.task_name == "wnli":
+            return {"acc": self.simple_accuracy(preds, labels)}
+        elif self.task_name == "hans":
+            return {"acc": self.simple_accuracy(preds, labels)}
         else:
-            raise KeyError(task_name)    
+            raise KeyError(self.task_name)    
      
      
      
