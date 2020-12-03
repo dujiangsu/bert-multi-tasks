@@ -17,21 +17,13 @@ import torch
 import time
 from torch import nn
 from downstream import SequenceClassification
-from data import GlueDataArgs, DataIterator
+from data import GlueDataArgs, DataIterator, ComputeMetrics
 from transformers import BertConfig, BertTokenizer, BertModel
 from transformers import (
-    HfArgumentParser,
-    Trainer,
-    TrainingArguments,
-    #glue_compute_metrics,
-    glue_output_modes,
-    glue_tasks_num_labels,
-    set_seed,
-)
-
-
-
-        
+    glue_compute_metrics,
+    # glue_tasks_num_labels
+    )
+       
 # class GlueTraingArgs:
     # def __init__(self,output_dir="/home/dujiangsu/output/results",
     # do_train=False,do_eval=False,do_predict=False):
@@ -44,21 +36,27 @@ logger = logging.getLogger(__name__)
 
 
 epochs = 20
+# or 
+iterations = 30000
 batch_size = 32
+learning_rate = 0.00001
+eval_internal = 10000 
+
+
 bert_path="/home/dujiangsu/bert-base-cased"
-task0 = "SST-2"
-task1 = "QQP"
-data_task0 = "/home/dujiangsu/glue_dataset/SST-2"
-data_task1 = "/home/dujiangsu/glue_dataset/QQP"
-cache_dir = "/home/dujiangsu/output/"
+task0 = "SST-2"  # MRPC
+task1 = "QQP"   
+cache_dir = "/home/dujiangsu/output/bert-cache"
+model_save_dir = "/home/dujiangsu/output/saved_model/"
+
+
 
 use_gpu=torch.cuda.is_available()
 
-# TODO: GPU Training.
 def main():
     #training_args = GlueTraingArgs(do_train=True)
-    data_args_task0 = GlueDataArgs(task_name = task0, data_dir = data_task0)
-    data_args_task1 = GlueDataArgs(task_name = task1, data_dir = data_task1)
+    data_args_task0 = GlueDataArgs(task_name=task0)
+    data_args_task1 = GlueDataArgs(task_name=task1)
     
     if use_gpu:
         print("Training on GPU.")
@@ -77,20 +75,19 @@ def main():
     
     config_task0 = BertConfig.from_pretrained(
         bert_path,
-        num_labels=glue_tasks_num_labels[data_args_task0.task_name], 
-        finetuning_task=data_args_task0.task_name,
-        cache_dir=cache_dir
+        num_labels = glue_tasks_num_labels[data_args_task0.task_name], 
+        finetuning_task = data_args_task0.task_name,
+        cache_dir = cache_dir
     )
     
     
     config_task1 = BertConfig.from_pretrained(
         bert_path,
-        num_labels=glue_tasks_num_labels[data_args_task1.task_name], 
-        finetuning_task=data_args_task1.task_name,
-        cache_dir=cache_dir
+        num_labels = glue_tasks_num_labels[data_args_task1.task_name], 
+        finetuning_task = data_args_task1.task_name,
+        cache_dir = cache_dir
     )
     
-    print(config_task1)
     # Model Prepare, The Bert Model has loaded the pretrained model, 
     # and these downstream structures are initialized randomly.
     # TODO: Adding Seed for random.  referee: Trainer.train()
@@ -107,57 +104,55 @@ def main():
     # Data prepare
     tokenizer = BertTokenizer.from_pretrained(bert_path, cache_dir=cache_dir)    
     data_iterator_train_task0 = DataIterator(data_args_task0, tokenizer=tokenizer, mode="train", cache_dir=cache_dir, batch_size=batch_size)
-    # data_iterator_eval_task0 = DataIterator(data_args_task0, tokenizer=tokenizer, mode="dev", cache_dir=cache_dir_task0, batch_size=batch_size) 
     data_iterator_train_task1 = DataIterator(data_args_task1, tokenizer=tokenizer, mode="train", cache_dir=cache_dir, batch_size=batch_size)
-    # data_iterator_eval_task1 = DataIterator(data_args_task1, tokenizer=tokenizer, mode="dev", cache_dir=cache_dir_task1,batch_size=batch_size)
-    
+    data_iterator_eval_task0 = DataIterator(data_args_task0, tokenizer=tokenizer, mode="dev", cache_dir=cache_dir_task0, batch_size=batch_size)     
+    data_iterator_eval_task1 = DataIterator(data_args_task1, tokenizer=tokenizer, mode="dev", cache_dir=cache_dir_task1,batch_size=batch_size)    
     logger.info("*** DataSet Ready ***")
     
-    opt_bert = torch.optim.AdamW(model_Bert.parameters(), lr=0.0001)
-    opt_task0 = torch.optim.AdamW(model_task0.parameters(), lr=0.0001) 
-    opt_task1 = torch.optim.AdamW(model_task1.parameters(), lr=0.0001)
+    # data0 = data_iterator_train_task0.next()
+    # print(data0)
     
-    iterations = (epochs * len(data_iterator_train_task1) // batch_size) + 1  
-    scheduler = torch.optim.lr_scheduler.LambdaLR(opt_bert,
-                                                lambda step: (1.0-step/iterations))
+    # input_ids0=data0['input_ids']
+    # attention_mask0=data0['attention_mask']
+    # token_type_ids0=data0['token_type_ids']  
+    # label0=data0['labels']
+    
+    # print(input_ids0)
+    # print(input_ids0.size())
+    # print(input_ids0.type())
+    # print(attention_mask0)
+    # print(attention_mask0.size())
+    # print(attention_mask0.type())
+    # print(token_type_ids0)
+    # print(token_type_ids0.size())
+    # print(token_type_ids0.type())
+    # print(label0)
+    # print(label0.size())
+    # print(label0.type())
+    
+    # Optimizer and lr_scheduler
+    opt_bert = torch.optim.AdamW(model_Bert.parameters(), lr=learning_rate)
+    opt_task0 = torch.optim.AdamW(model_task0.parameters(), lr=learning_rate) 
+    opt_task1 = torch.optim.AdamW(model_task1.parameters(), lr=learning_rate)
+    
+    metrics_task0 = ComputeMetrics(data_args_task0)
+    metrics_task1 = ComputeMetrics(data_args_task1)
+    
+    scheduler = torch.optim.lr_scheduler.LambdaLR(opt_bert, lambda step: (1.0-step/iterations))
+    
+    
+    # iterations = (epochs * len(data_iterator_train_task1) // batch_size) + 1
     print(iterations)
-    
-    
-    data0 = data_iterator_train_task0.next()
-    
-    print(data0)
-    
-    input_ids0=data0['input_ids']
-    attention_mask0=data0['attention_mask']
-    token_type_ids0=data0['token_type_ids']  
-    label0=data0['labels']
-    
-    print(input_ids0)
-    print(input_ids0.size())
-    print(input_ids0.type())
-    print(attention_mask0)
-    print(attention_mask0.size())
-    print(attention_mask0.type())
-    print(token_type_ids0)
-    print(token_type_ids0.size())
-    print(token_type_ids0.type())
-    print(label0)
-    print(label0.size())
-    print(label0.type())
-    
-    
     all_iters = 0
   
-'''    
+    
     for i in range(1, iterations+1):
     
         all_iters += 1        
-        scheduler.step()
-        
+        scheduler.step()        
         model_Bert.train()
         model_task0.train()
-        model_task1.train()
-        
+        model_task1.train()        
         data0 = data_iterator_train_task0.next()
         data1 = data_iterator_train_task1.next()
         
@@ -165,19 +160,19 @@ def main():
             input_ids0=data0['input_ids'].cuda()
             attention_mask0=data0['attention_mask'].cuda()
             token_type_ids0=data0['token_type_ids'].cuda()
+            label0=data0['labels'].cuda()
             input_ids1=data1['input_ids'].cuda()
             attention_mask1=data1['attention_mask'].cuda()
-            token_type_ids1=data1['token_type_ids'].cuda()
-            label0=data0['labels'].cuda()
+            token_type_ids1=data1['token_type_ids'].cuda()            
             label1=data1['labels'].cuda()
         else:
             input_ids0=data0['input_ids']
             attention_mask0=data0['attention_mask']
             token_type_ids0=data0['token_type_ids']
+            label0=data0['labels']
             input_ids1=data1['input_ids']
             attention_mask1=data1['attention_mask']
-            token_type_ids1=data1['token_type_ids']     
-            label0=data0['labels']
+            token_type_ids1=data1['token_type_ids']            
             label1=data1['labels']
         
         output_inter0 = model_Bert(input_ids=input_ids0, attention_mask=attention_mask0, token_type_ids=token_type_ids0, return_dict=True)
@@ -188,8 +183,13 @@ def main():
         
         loss = loss0+loss1
         
-        # printInfo = 'TRAIN ITER {}: loss ={:.6f}, loss0={:.6f}, loss1={:.6f}'.format(all_iters, loss, loss0, loss1)
-        printInfo = 'TOTAL/Train {}/{}:lr:{} , loss0={:.6f}, loss0={:.6f}, loss1={:.6f}'.format(all_iters, iterations, scheduler.get_lr(), loss, loss0, loss1)
+        # balance the losses of sub-tasks
+        ratio = loss0/loss1
+        weight0 = (2*ratio) / (1+ratio)
+        weight1 = 2 - weight0
+        loss = loss0*weight0 + loss1*weight1
+        
+        printInfo = 'TOTAL/Train {}/{} - lr:{}, sl={:.6f}, l0/w0-{:.6f} {:.6f}, l1/w1-{:.6f}(:.6f)'.format(all_iters, iterations, scheduler.get_lr(),loss,loss0,weight0,loss1,weight1)
         logging.info(printInfo)
         
         # print(loss)
@@ -204,9 +204,49 @@ def main():
         opt_bert.step()
         opt_task0.step()
         opt_task1.step()
+            
+        if (i % eval_interval == 0):
+            evaluate(model_Bert, model_task0, data_iterator_eval_task0, metrics_task0)
+            evaluate(model_Bert, model_task1, data_iterator_eval_task1, metrics_task1)
+
+    evaluate(model_Bert, model_task0, data_iterator_eval_task0, metrics_task0)
+    evaluate(model_Bert, model_task1, data_iterator_eval_task1, metrics_task1)
+
+    # Saving models
+    model_Bert.save_pretrained(model_save_dir + "main")
+    model_task0.save_pretrained(model_save_dir + "task0")
+    model_task1.save_pretrained(model_save_dir + "task1")
 
 
-'''
+def evaluate(main_model, sub_model, dataset, metrics):
+
+    for i in range(1, len(dataset)+1):
+        
+        main_model.eval()
+        sub_model.eval()
+        data = dataset.next()
+        
+        if use_gpu:        
+            input_ids = data['input_ids'].cuda()
+            attention_mask = data['attention_mask'].cuda()
+            token_type_ids = data['token_type_ids'].cuda()
+            label = data['labels'].cuda()
+        else:
+            input_ids = data['input_ids']
+            attention_mask = data['attention_mask']
+            token_type_ids = data['token_type_ids']
+            label = data['labels']
+            
+        output_inter = main_model(input_ids=input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids, return_dict=True)   
+        loss = sub_model(input=output_inter, labels=label)[0]
+        preds = output_inter
+        eval_result = metrics.result(label, preds)
+        
+    printInfo = "*** Evaluate Result: loss={:.6f}, eval={:s}: {:.6f} ***".format(loss, eval_result.keys(), eval_result.values()"
+    logging.info(printInfo)
+          
+                
+            
 
 if __name__ == "__main__":
     main()
