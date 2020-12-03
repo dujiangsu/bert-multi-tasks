@@ -3,6 +3,7 @@ import sys
 import logging
 import torch
 import time
+import numpy as np
 from torch import nn
 from downstream import SequenceClassification
 from data import GlueDataArgs, DataIterator, ComputeMetrics
@@ -102,8 +103,6 @@ def main():
     iterations = 200
     
     scheduler = torch.optim.lr_scheduler.LambdaLR(opt_main, lambda step: (1.0-step/iterations))
-
-    
     all_iters = 0
 
     for i in range(1, iterations+1):
