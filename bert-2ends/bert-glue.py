@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 epochs = 10
 batch_size = 32
 learning_rate = 0.0001
-eval_interval = 30
+eval_interval = 10
 bert_path = "/home/dujiangsu/bert-base-cased"
 task0 = "CoLA"
 task1 = "SST-2"
@@ -192,14 +192,17 @@ def evaluate(main_model, sub_model, dataset, metrics):
 
         output_inter = main_model(input_ids=input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids, return_dict=True)
         loss = sub_model(input=output_inter, labels=label)[0]
-        preds = output_inter
+        preds = sub_model(input=output_inter, return_dict=True)
+        print(preds)
         eval_result = metrics.result(label, preds)
 
-
-    printInfo = "*** Evaluate Result: loss={:.6f}, eval={:s}: {:.6f} ***".format(loss, eval_result.keys(), eval_result.values())
+    logging.info("*** Evaluate Result ***")
+    printInfo = "loss = {:.6f}".format(loss)
     logging.info(printInfo)
+    for i in eval_result:
+        printInfo = "{:s} = {:.6f}".format(i, eval_result[i])
+        logging.info(printInfo)
     
-
 if __name__ == "__main__":
     main()
 
