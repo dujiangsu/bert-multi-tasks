@@ -173,8 +173,13 @@ def main():
 
 def evaluate(main_model, sub_model, dataset, metrics):
 
-    all_labels = []
-    all_preds = []
+    # all_labels = []
+    # all_preds = []
+    all_labels = np.empty([0, 0], dtype=object)
+    all_preds = np.empty([0, 0], dtype=object)
+    
+    printInfo = "*** Evaluation of {:s} ***".format(metrics.task_name)
+    logging.info(printInfo)
 
     with torch.no_grad():
         for i in range(1, len(dataset)+1):
@@ -199,16 +204,20 @@ def evaluate(main_model, sub_model, dataset, metrics):
             loss = output[0]
             label = label.cpu().numpy()
 
-            # TODO: preds should be after softmax
-            pred = output.logits.t()[0].cpu().numpy().astype(int) # TODO: It should be preds[i]=1 if preds[i]>0 else preds[i]=0
+            printInfo = "loss = {:.6f}".format(loss)
+            logging.info(printInfo)
 
-            # eval_result = metrics.result(label, pred)
-            all_labels.append(label)
-            all_preds.append(pred)
+            # TODO: preds should be after softmax
+            pred = output.logits.t()[0].cpu().numpy() # TODO: It should be preds[i]=1 if preds[i]>0 else preds[i]=0
+
+            print(pred)
+
+            # all_labels.append(label)
+            # all_preds.append(pred)
+            np.append(all_labels, label)
+            np.append(all_preds, pred.astype(int))
 
     eval_result = metrics.result(all_labels, all_preds)
-    printInfo = "*** Evaluate Result of {:s} ***".format(metrics.task_name)
-    logging.info(printInfo)
     printInfo = "loss = {:.6f}".format(loss)
     logging.info(printInfo)
     for i in eval_result:
