@@ -158,12 +158,13 @@ def main():
         opt_task0.step()
         opt_task1.step()
 
-        if (i % eval_interval == 0):
+        if i % eval_interval == 0:
             evaluate(model_Bert, model_task0, data_iterator_eval_task0, metrics_task0)
             evaluate(model_Bert, model_task1, data_iterator_eval_task1, metrics_task1)
 
-    evaluate(model_Bert, model_task0, data_iterator_eval_task0, metrics_task0)
-    evaluate(model_Bert, model_task1, data_iterator_eval_task1, metrics_task1)
+    if iterations % eval_interval != 0:
+        evaluate(model_Bert, model_task0, data_iterator_eval_task0, metrics_task0)
+        evaluate(model_Bert, model_task1, data_iterator_eval_task1, metrics_task1)
 
     # Saving models
     model_Bert.save_pretrained(model_save_dir + "main")
@@ -172,6 +173,10 @@ def main():
 
 
 def evaluate(main_model, sub_model, dataset, metrics):
+
+    all_labels = []
+    all_preds = []
+
     with torch.no_grad():
         for i in range(1, len(dataset)+1):
 
@@ -190,16 +195,19 @@ def evaluate(main_model, sub_model, dataset, metrics):
                 token_type_ids = data['token_type_ids']
                 label = data['labels']
 
-        output_inter = main_model(input_ids=input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids, return_dict=True)
-        output = sub_model(input=output_inter, labels=label, return_dict=True)
-        loss = output[0]
-        label = label.cpu().numpy()
+            output_inter = main_model(input_ids=input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids, return_dict=True)
+            output = sub_model(input=output_inter, labels=label, return_dict=True)
+            loss = output[0]
+            label = label.cpu().numpy()
 
-        # preds softmax
-        preds = output.logits.t()[0].cpu().numpy().astype(int) # It should be preds[i]=1 if preds[i]>0 else preds[i]=0
+            # TODO: preds should be after softmax
+            pred = output.logits.t()[0].cpu().numpy().astype(int) # TODO: It should be preds[i]=1 if preds[i]>0 else preds[i]=0
 
-        eval_result = metrics.result(label, preds)
+            # eval_result = metrics.result(label, pred)
+            all_labels.append(label)
+            all_preds.append(pred)
 
+    eval_result = metrics.result(label, pred)
     printInfo = "*** Evaluate Result of {:s} ***".format(metrics.task_name)
     logging.info(printInfo)
     printInfo = "loss = {:.6f}".format(loss)
