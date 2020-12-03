@@ -207,7 +207,7 @@ def evaluate(main_model, sub_model, dataset, metrics):
             all_labels.append(label)
             all_preds.append(pred)
 
-    eval_result = metrics.result(label, pred)
+    eval_result = metrics.result(all_labels, all_preds)
     printInfo = "*** Evaluate Result of {:s} ***".format(metrics.task_name)
     logging.info(printInfo)
     printInfo = "loss = {:.6f}".format(loss)
