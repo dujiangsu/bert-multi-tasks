@@ -1,6 +1,6 @@
 from torch.utils.data.dataloader import DataLoader
 from torch.utils.data.sampler import RandomSampler, SequentialSampler
-from datasets import load_dataset, load_metric
+from datasets import load_dataset, load_metric, load_from_disk
 import random
 import logging
 import torch

@@ -42,12 +42,12 @@ eval_interval = 10000
 
 
 bert_path="/home/dujiangsu/bert-base-cased"
-task0 = "SST-2"  # MRPC
+task0 = "SST-2"
 task1 = "QQP"   
 cache_dir = "/home/dujiangsu/output/bert-cache"
 model_save_dir = "/home/dujiangsu/output/saved_model/"
 
-
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 use_gpu=torch.cuda.is_available()
 
@@ -71,7 +71,7 @@ def main():
     fh.setFormatter(logging.Formatter(log_format))
     logging.getLogger().addHandler(fh)
     
-    logger.info("Tasks:" task0 + "," + task1)
+    logger.info("Tasks:" + task0 + "," + task1)
     
     config_task0 = BertConfig.from_pretrained(
         bert_path,
