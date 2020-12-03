@@ -173,27 +173,27 @@ def main():
 
 def evaluate(main_model, sub_model, dataset, metrics):
     
-    for i in range(1, len(dataset)+1):
+    with torch.no_grad():
+        for i in range(1, len(dataset)+1):
 
-        main_model.eval()
-        sub_model.eval()
-        data = dataset.next()
+            main_model.eval()
+            sub_model.eval()
+            data = dataset.next()
 
-        if use_gpu:        
-            input_ids = data['input_ids'].cuda()
-            attention_mask = data['attention_mask'].cuda()
-            token_type_ids = data['token_type_ids'].cuda()
-            label = data['labels'].cuda()
-        else:
-            input_ids = data['input_ids']
-            attention_mask = data['attention_mask']
-            token_type_ids = data['token_type_ids']
-            label = data['labels']
+            if use_gpu:        
+                input_ids = data['input_ids'].cuda()
+                attention_mask = data['attention_mask'].cuda()
+                token_type_ids = data['token_type_ids'].cuda()
+                label = data['labels'].cuda()
+            else:
+                input_ids = data['input_ids']
+                attention_mask = data['attention_mask']
+                token_type_ids = data['token_type_ids']
+                label = data['labels']
 
         output_inter = main_model(input_ids=input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids, return_dict=True)
         loss = sub_model(input=output_inter, labels=label)[0]
-        preds = sub_model(input=output_inter, return_dict=True)
-        print(preds)
+        preds = sub_model(input=output_inter, return_dict=True) # here problem not solved
         eval_result = metrics.result(label, preds)
 
     logging.info("*** Evaluate Result ***")
