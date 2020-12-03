@@ -172,7 +172,6 @@ def main():
 
 
 def evaluate(main_model, sub_model, dataset, metrics):
-    
     with torch.no_grad():
         for i in range(1, len(dataset)+1):
 
@@ -192,11 +191,16 @@ def evaluate(main_model, sub_model, dataset, metrics):
                 label = data['labels']
 
         output_inter = main_model(input_ids=input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids, return_dict=True)
-        loss = sub_model(input=output_inter, labels=label)[0]
-        preds = sub_model(input=output_inter, return_dict=True) # here problem not solved
+        output = sub_model(input=output_inter, labels=label, return_dict=True)
+        loss = output[0]
+        label = label.cpu().numpy()
+        preds = output.logits.t()[0].cpu().numpy().astype(int) # It should be preds[i]=1 if it>0 else preds[i]=0
+        # for i in preds:
+        #     i = 1 if i > 0 else 0
         eval_result = metrics.result(label, preds)
 
-    logging.info("*** Evaluate Result ***")
+    printInfo = "*** Evaluate Result of {:s} ***".format(metrics.task_name)
+    logging.info(printInfo)
     printInfo = "loss = {:.6f}".format(loss)
     logging.info(printInfo)
     for i in eval_result:

@@ -141,10 +141,10 @@ class ComputeMetrics():
     def __init__(self, dataArgs):
         self.task_name = dataArgs.task_name
 
-    def simple_accuracy(preds, labels):
+    def simple_accuracy(self, preds, labels):
         return (preds == labels).mean()
 
-    def acc_and_f1(preds, labels):
+    def acc_and_f1(self, preds, labels):
         acc = simple_accuracy(preds, labels)
         f1 = f1_score(y_true=labels, y_pred=preds)
         return {
@@ -153,7 +153,7 @@ class ComputeMetrics():
             "acc_and_f1": (acc + f1) / 2,
         }
 
-    def pearson_and_spearman(preds, labels):
+    def pearson_and_spearman(self, preds, labels):
         pearson_corr = pearsonr(preds, labels)[0]
         spearman_corr = spearmanr(preds, labels)[0]
         return {
@@ -165,7 +165,7 @@ class ComputeMetrics():
     def result(self, labels, preds):
         if self.task_name == "cola":
             return {"mcc": matthews_corrcoef(labels, preds)}
-        elif self.task_name == "sst-2":
+        elif self.task_name == "sst2":
             return {"acc": self.simple_accuracy(preds, labels)}
         elif self.task_name == "mrpc":
             return self.acc_and_f1(preds, labels)
