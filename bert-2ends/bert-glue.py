@@ -208,9 +208,11 @@ def evaluate(main_model, sub_model, dataset, metrics):
             logging.info(printInfo)
 
             # TODO: preds should be after softmax
-            pred = output.logits.t()[0].cpu().numpy() # TODO: It should be preds[i]=1 if preds[i]>0 else preds[i]=0
+            logits = output.logits.t().cpu() # TODO: It should be preds[i]=1 if preds[i]>0 else preds[i]=0
+            # pred = torch.nn.Softmax(logits).numpy()
 
             print(pred)
+            # print(pred2)
 
             # all_labels.append(label)
             # all_preds.append(pred)
