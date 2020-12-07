@@ -23,10 +23,10 @@ class GlueTrainArgs:
     
 logger = logging.getLogger(__name__)
 
-epochs = 10
+epochs = 3
 batch_size = 32
 learning_rate = 0.0001
-eval_interval = 10
+eval_interval = 1000
 bert_path = "/home/dujiangsu/bert-base-cased"
 task0 = "CoLA"
 task1 = "SST-2"
@@ -99,8 +99,8 @@ def main():
     metrics_task0 = ComputeMetrics(data_args_task0)
     metrics_task1 = ComputeMetrics(data_args_task1)
     
-    # iterations = (epochs * len(data_iterator_train_task1) // batch_size) + 1
-    iterations = 200
+    iterations = (epochs * len(data_iterator_train_task1) // batch_size) + 1
+    # iterations = 200
     
     scheduler = torch.optim.lr_scheduler.LambdaLR(opt_main, lambda step: (1.0-step/iterations))
     all_iters = 0
