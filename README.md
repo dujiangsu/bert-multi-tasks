@@ -7,7 +7,7 @@ Make a single pre-trained NLP model work for multi-tasks.
 #### TODO
 
 1. use datasets as dataloader.  √
-2. glue evaluation.             √
+2. glue evaluation.             not yet
 3. model checkpoint.            √
 4. resilient training methods or gradient-aware SGD.
 5. low-precision.
