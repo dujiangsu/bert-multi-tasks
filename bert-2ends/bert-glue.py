@@ -10,7 +10,7 @@ from data import GlueDataArgs, DataIterator, ComputeMetrics
 from transformers import BertConfig, BertTokenizer, BertModel
 from transformers import (
     glue_tasks_num_labels,
-    # glue_compute_metrics
+    glue_compute_metrics
 )
         
 class GlueTrainArgs:
@@ -173,10 +173,10 @@ def main():
 
 def evaluate(main_model, sub_model, dataset, metrics):
 
-    # all_labels = []
-    # all_preds = []
-    all_labels = np.empty([0, 0], dtype=object)
-    all_preds = np.empty([0, 0], dtype=object)
+    all_labels = []
+    all_preds = []
+    # all_labels = np.empty(0, dtype=int)
+    # all_preds = np.empty(0, dtype=int)
     
     printInfo = "*** Evaluation of {:s} ***".format(metrics.task_name)
     logging.info(printInfo)
@@ -202,29 +202,27 @@ def evaluate(main_model, sub_model, dataset, metrics):
             output_inter = main_model(input_ids=input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids, return_dict=True)
             output = sub_model(input=output_inter, labels=label, return_dict=True)
             loss = output[0]
-            label = label.cpu().numpy()
+            label = label.cpu().numpy().tolist()
+            softmax_layer = torch.nn.Softmax(dim=1)
+            pred = np.round(softmax_layer(output.logits).cpu().t()[0].numpy()).tolist()
 
-            printInfo = "loss = {:.6f}".format(loss)
-            logging.info(printInfo)
+            all_labels += label
+            all_preds += pred
+            # np.append(all_labels, label)
+            # np.append(all_preds, pred)
 
-            # TODO: preds should be after softmax
-            logits = output.logits.t().cpu() # TODO: It should be preds[i]=1 if preds[i]>0 else preds[i]=0
-            # pred = torch.nn.Softmax(logits).numpy()
-
-            print(pred)
-            # print(pred2)
-
-            # all_labels.append(label)
-            # all_preds.append(pred)
-            np.append(all_labels, label)
-            np.append(all_preds, pred.astype(int))
-
-    eval_result = metrics.result(all_labels, all_preds)
+    eval_result = metrics.result(np.array(all_labels), np.array(all_preds))
     printInfo = "loss = {:.6f}".format(loss)
     logging.info(printInfo)
     for i in eval_result:
         printInfo = "{:s} = {:.6f}".format(i, eval_result[i])
         logging.info(printInfo)
+
+'''
+def load_model(training_args, config, path):
+    path = path
+'''
+
     
 if __name__ == "__main__":
     main()
