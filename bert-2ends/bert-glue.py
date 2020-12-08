@@ -15,6 +15,7 @@ import sys
 import logging
 import torch
 import time
+import numpy as np
 from torch import nn
 from downstream import SequenceClassification
 from data import GlueDataArgs, DataIterator, ComputeMetrics
@@ -35,10 +36,11 @@ from transformers import (
 logger = logging.getLogger(__name__)
 
 
-epochs = 10
+epochs = 5
 batch_size = 32
 learning_rate = 0.00001
-eval_interval = 10000 
+eval_interval = 10000
+
 
 
 bert_path="/home/dujiangsu/bert-base-cased"
@@ -146,8 +148,7 @@ def main():
     
     for i in range(1, iterations+1):
     
-        all_iters += 1        
-        scheduler.step()        
+        all_iters += 1
         model_Bert.train()
         model_task0.train()
         model_task1.train()        
@@ -202,6 +203,8 @@ def main():
         opt_bert.step()
         opt_task0.step()
         opt_task1.step()
+        
+        scheduler.step() 
             
         if (i % eval_interval == 0):
             evaluate(model_Bert, model_task0, data_iterator_eval_task0, metrics_task0)
@@ -217,8 +220,17 @@ def main():
 
 
 def evaluate(main_model, sub_model, dataset, metrics):
+
+    all_labels = []
+    all_preds = []
+    all_losses = []
+    
+    printInfo = "*** Evaluation of {:s} ***".format(metrics.task_name)
+    logging.info(printInfo)
+
     with torch.no_grad():
         for i in range(1, len(dataset)+1):
+        
             main_model.eval()
             sub_model.eval()
             data = dataset.next()
@@ -236,18 +248,25 @@ def evaluate(main_model, sub_model, dataset, metrics):
             
             output_inter = main_model(input_ids=input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids, return_dict=True)
             output = sub_model(input=output_inter, labels=label)
-            loss = output[0]
-            label = label.cpu().numpy()
+            loss = output[0].cpu().numpy().tolist()
+            label = label.cpu().numpy().tolist()
+            softmax_layer = torch.nn.Softmax(dim=1)
+            pred = np.round(softmax_layer(output.logits).cpu().t()[1].numpy()).tolist()
             
-    # TODO preds softmax
             
-    # preds = output.logits.t()[0].cpu().numpy().astype(int) # It should be preds[i]=1 if preds[i]>0 else preds[i]=0
+            all_labels += label
+            all_preds += pred
+            all_losses += [loss]
             
-    # eval_result = metrics.result(label, preds)
     
-    # printInfo = "*** Evaluate Result: loss={:.6f}, eval={:s}: {:.6f} ***".format(loss, eval_result.keys(), eval_result.values())
-    # logging.info(printInfo)
-
+    logging.info("loss = {:.6f}".format(sum(all_losses)/len(all_losses)))
+    
+    eval_result = metrics.result(np.array(all_labels), np.array(all_preds))
+    for i in eval_result:
+        printInfo = "{:s} = {:.6f}".format(i, eval_result[i])
+        logging.info(printInfo)    
+    
+    
 
 if __name__ == "__main__":
     main()

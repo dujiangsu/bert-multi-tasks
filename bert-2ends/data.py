@@ -163,7 +163,7 @@ class ComputeMetrics():
     def result(self, labels, preds):
         if self.task_name == "cola":
             return {"mcc": matthews_corrcoef(labels, preds)}
-        elif self.task_name == "sst-2":
+        elif self.task_name == "sst2":
             return {"acc": self.simple_accuracy(preds, labels)}
         elif self.task_name == "mrpc":
             return self.acc_and_f1(preds, labels)
