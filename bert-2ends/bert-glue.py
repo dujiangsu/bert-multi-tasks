@@ -1,4 +1,7 @@
 import os
+
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+
 import sys
 import logging
 import torch
@@ -26,14 +29,14 @@ logger = logging.getLogger(__name__)
 epochs = 3
 batch_size = 32
 learning_rate = 0.0001
-eval_interval = 1000
+eval_interval = 500
 bert_path = "/home/dujiangsu/bert-base-cased"
 task0 = "CoLA"
 task1 = "SST-2"
 data_task0 = "/home/dujiangsu/tqr/glue_dataset/cola"
 data_task1 = "/home/dujiangsu/tqr/glue_dataset/sst2"
 cache_dir = "/home/dujiangsu/tqr/cache/"
-model_save_dir = "/home/dujiangsu/tqr/bert-multi-tasks/saved_model/"
+model_save_dir = "/home/dujiangsu/tqr/bert-multi-tasks/saved_model_cola_cola/"
 
 use_gpu = torch.cuda.is_available()
 
@@ -175,6 +178,7 @@ def evaluate(main_model, sub_model, dataset, metrics):
 
     all_labels = []
     all_preds = []
+    all_loss = []
     # all_labels = np.empty(0, dtype=int)
     # all_preds = np.empty(0, dtype=int)
     
@@ -202,15 +206,19 @@ def evaluate(main_model, sub_model, dataset, metrics):
             output_inter = main_model(input_ids=input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids, return_dict=True)
             output = sub_model(input=output_inter, labels=label, return_dict=True)
             loss = output[0]
+            all_loss.append(loss.item())
             label = label.cpu().numpy().tolist()
             softmax_layer = torch.nn.Softmax(dim=1)
-            pred = np.round(softmax_layer(output.logits).cpu().t()[0].numpy()).tolist()
+
+            # only for 2-classification task
+            pred = np.round(softmax_layer(output.logits).cpu().t()[1].numpy()).tolist()
 
             all_labels += label
             all_preds += pred
             # np.append(all_labels, label)
             # np.append(all_preds, pred)
-
+    
+    loss = np.array(all_loss).mean()
     eval_result = metrics.result(np.array(all_labels), np.array(all_preds))
     printInfo = "loss = {:.6f}".format(loss)
     logging.info(printInfo)
