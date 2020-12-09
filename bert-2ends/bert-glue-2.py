@@ -24,15 +24,15 @@ class GlueTrainArgs:
     
 logger = logging.getLogger(__name__)
 
-epochs = 5
+epochs = 1
 batch_size = 32
 learning_rate = 0.0001
 eval_interval = 500
 bert_path = "/home/dujiangsu/bert-base-cased"
-task0 = "QQP"
-task1 = "MRPC"
-data_task0 = "/home/dujiangsu/tqr/glue_dataset/qqp"
-data_task1 = "/home/dujiangsu/tqr/glue_dataset/mrpc"
+task0 = "MRPC"
+task1 = "QQP"
+data_task0 = "/home/dujiangsu/tqr/glue_dataset/mrpc"
+data_task1 = "/home/dujiangsu/tqr/glue_dataset/qqp"
 cache_dir = "/home/dujiangsu/tqr/cache/"
 model_save_dir = "/home/dujiangsu/tqr/bert-multi-tasks/saved_model_qqp_mrpc/"
 
