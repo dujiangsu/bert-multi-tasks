@@ -103,6 +103,11 @@ def main():
         model_task0 = SequenceClassification(config_task0)
         model_task1 = SequenceClassification(config_task1)
     
+    # print(model_Bert)
+    # print(model_task0)
+    # print(model_task1)
+    
+    # return
     # Data prepare
     tokenizer = BertTokenizer.from_pretrained(bert_path, cache_dir=cache_dir)    
     data_iterator_train_task0 = DataIterator(data_args_task0, tokenizer=tokenizer, mode="train", cache_dir=cache_dir, batch_size=batch_size)
