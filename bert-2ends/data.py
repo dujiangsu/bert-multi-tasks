@@ -145,7 +145,7 @@ class ComputeMetrics():
         return (preds == labels).mean()
 
     def acc_and_f1(self, preds, labels):
-        acc = simple_accuracy(preds, labels)
+        acc = self.simple_accuracy(preds, labels)
         f1 = f1_score(y_true=labels, y_pred=preds)
         return {
             "acc": acc,

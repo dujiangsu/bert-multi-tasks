@@ -1,5 +1,5 @@
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+# os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 import sys
 import logging
 import torch
@@ -24,17 +24,17 @@ class GlueTrainArgs:
     
 logger = logging.getLogger(__name__)
 
-epochs = 20
+epochs = 5
 batch_size = 32
 learning_rate = 0.0001
 eval_interval = 500
 bert_path = "/home/dujiangsu/bert-base-cased"
-task0 = "CoLA"
-task1 = "CoLA"
-data_task0 = "/home/dujiangsu/tqr/glue_dataset/cola"
-data_task1 = "/home/dujiangsu/tqr/glue_dataset/cola"
+task0 = "QQP"
+task1 = "MRPC"
+data_task0 = "/home/dujiangsu/tqr/glue_dataset/qqp"
+data_task1 = "/home/dujiangsu/tqr/glue_dataset/mrpc"
 cache_dir = "/home/dujiangsu/tqr/cache/"
-model_save_dir = "/home/dujiangsu/tqr/bert-multi-tasks/saved_model_cola_cola/"
+model_save_dir = "/home/dujiangsu/tqr/bert-multi-tasks/saved_model_qqp_mrpc/"
 
 use_gpu = torch.cuda.is_available()
 
