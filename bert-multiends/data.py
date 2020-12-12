@@ -102,15 +102,18 @@ class DataIterator(object):
         
         if(mode == "train"):
             self.datasets = self.datasets["train"]
+            self.sampler = RandomSampler(self.datasets)
         elif(mode == "dev"):
             self.datasets = self.datasets["validation_matched" if data_args.task_name == "mnli" else "validation"]
+            self.sampler = SequentialSampler(self.datasets)
         elif(mode == "test"):
             self.datasets = self.datasets["test_matched" if data_args.task_name == "mnli" else "test"]
+            self.sampler = SequentialSampler(self.datasets)
         # Log a few random samples from the training set:
-        for index in random.sample(range(len(self.datasets)), 1):
-            logger.info(f"Sample {index} of the training set: {self.datasets[index]}.")
+        # for index in random.sample(range(len(self.datasets)), 1):
+            # logger.info(f"Sample {index} of the training set: {self.datasets[index]}.")
            
-        self.sampler = RandomSampler(self.datasets)
+        
         self.dataloader = DataLoader(
                         self.datasets, 
                         batch_size=batch_size, 
