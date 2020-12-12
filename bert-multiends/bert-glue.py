@@ -29,15 +29,16 @@ from transformers import (
 logger = logging.getLogger(__name__)
 
 # Hyperparameters
-epochs = 10
+epochs = 20
+model_name="bert-base-cased"
 batch_size = [24, 128, 4, 2]
 bs = 128
 batch_size_val = [109, 200, 200, 102]
 learning_rate = 0.00001
 eval_interval = 5000
 bert_path="/home/nsccgz_jiangsu/bert-models/bert-base-cased"
-cache_dir = "/home/nsccgz_jiangsu/djs/output/bert-cache"
-model_save_dir = "/home/nsccgz_jiangsu/djs/output/saved_model/"
+cache_dir = "/home/nsccgz_jiangsu/djs/output/"+model_name+"/cache"
+model_save_dir = "/home/nsccgz_jiangsu/djs/output/"+model_name+"saved_model/"
 
 
 # Define what tasks to train
@@ -160,13 +161,15 @@ def main():
         if (i % eval_interval == 0):
             for j in range(ntasks):
                 evaluate(Bert_model, sub_models[j], dev_iter[j], batch_size_val[j], metrics[j])
+                sub_models[j].save_pretrained(model_save_dir + tasks[j]+"-"+i)
+            Bert_model.save_pretrained(model_save_dir + "main"+"-"+i)
     
     
     for i in range(ntasks):
         evaluate(Bert_model, sub_models[i], dev_iter[i], batch_size_val[i], metrics[i])
-        sub_models[i].save_pretrained(model_save_dir + tasks[i])
+        sub_models[i].save_pretrained(model_save_dir+tasks[i]+"-"+iterations)
             
-    Bert_model.save_pretrained(model_save_dir + "main")    
+    Bert_model.save_pretrained(model_save_dir+"main"+"-"+iterations)    
     
     
 
@@ -180,8 +183,6 @@ def evaluate(main_model, sub_model, dataset, bs, metrics):
     
     printInfo = "*** Evaluation of {:s} ***".format(metrics.task_name)
     logging.info(printInfo)
-    
-    print(iterations)
 
     with torch.no_grad():
         for i in range(1, iterations+1):

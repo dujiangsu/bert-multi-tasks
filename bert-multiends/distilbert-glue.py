@@ -17,9 +17,10 @@ import torch
 import time
 import numpy as np
 from torch import nn
-from downstream import SequenceClassification
+from downstream_distilbert import SequenceClassification
 from data import GlueDataArgs, DataIterator, ComputeMetrics
-from transformers import BertConfig, BertTokenizer, BertModel
+# from transformers import BertConfig, BertTokenizer, BertModel
+from transformers import DistilBertConfig, DistilBertTokenizer, DistilBertModel
 from transformers import (
     # glue_compute_metrics,
     glue_tasks_num_labels
@@ -29,14 +30,14 @@ from transformers import (
 logger = logging.getLogger(__name__)
 
 # Hyperparameters
-epochs = 10
-model_name="bert-base-cased"
+epochs = 20
+model_name="distilbert-base-cased"
 batch_size = [24, 128, 4, 2]
 bs = 128
 batch_size_val = [109, 200, 200, 102]
 learning_rate = 0.00001
 eval_interval = 5000
-bert_path="/home/nsccgz_jiangsu/bert-models/bert-base-cased"
+bert_path="/home/nsccgz_jiangsu/bert-models/distilbert-base-cased"
 cache_dir = "/home/nsccgz_jiangsu/djs/output/"+model_name+"/cache"
 model_save_dir = "/home/nsccgz_jiangsu/djs/output/"+model_name+"saved_model/"
 
@@ -76,12 +77,12 @@ def main():
     test_iter = list()
     sub_optimizer = list()
     metrics = list()
-    tokenizer = BertTokenizer.from_pretrained(bert_path, cache_dir=cache_dir)
+    tokenizer = DistilBertTokenizer.from_pretrained(bert_path, cache_dir=cache_dir)
     
     for i in range(ntasks):    
         logger.info("Tasks:" + tasks[i])
         data_args.append(GlueDataArgs(task_name=tasks[i]))
-        configuration.append(BertConfig.from_pretrained(bert_path, num_labels=glue_tasks_num_labels[data_args[i].task_name], 
+        configuration.append(DistilBertConfig.from_pretrained(bert_path, num_labels=glue_tasks_num_labels[data_args[i].task_name], 
                                 finetuning_task=data_args[i].task_name, cache_dir = cache_dir))
         if use_gpu:
             sub_models.append(SequenceClassification(configuration[i]).cuda())
@@ -98,9 +99,9 @@ def main():
         logger.info("*** DataSet Ready ***")
     
     if use_gpu:
-        Bert_model = BertModel.from_pretrained(bert_path, return_dict=True).cuda()
+        Bert_model = DistilBertModel.from_pretrained(bert_path, return_dict=True).cuda()
     else:
-        Bert_model = BertModel.from_pretrained(bert_path, return_dict=True)
+        Bert_model = DistilBertModel.from_pretrained(bert_path, return_dict=True)
     
     bert_optimizer = torch.optim.AdamW(Bert_model.parameters(), lr=learning_rate)
     
@@ -130,15 +131,15 @@ def main():
             if use_gpu:
                 input_ids=data['input_ids'].cuda()
                 attention_mask=data['attention_mask'].cuda()
-                token_type_ids=data['token_type_ids'].cuda()
+                #token_type_ids=data['token_type_ids'].cuda()
                 label=data['labels'].cuda()
             else:
                 input_ids=data['input_ids']
                 attention_mask=data['attention_mask']
-                token_type_ids=data['token_type_ids']
+                #token_type_ids=data['token_type_ids']
                 label=data['labels']
                 
-            output_inter = Bert_model(input_ids=input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids, return_dict=True)
+            output_inter = Bert_model(input_ids=input_ids, attention_mask=attention_mask, return_dict=True) # token_type_ids=token_type_ids,
             losses.append(sub_models[j](input=output_inter, labels=label)[0])
             
         loss = 0

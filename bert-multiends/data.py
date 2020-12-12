@@ -110,8 +110,8 @@ class DataIterator(object):
             self.datasets = self.datasets["test_matched" if data_args.task_name == "mnli" else "test"]
             self.sampler = SequentialSampler(self.datasets)
         # Log a few random samples from the training set:
-        # for index in random.sample(range(len(self.datasets)), 1):
-            # logger.info(f"Sample {index} of the training set: {self.datasets[index]}.")
+        for index in random.sample(range(len(self.datasets)), 1):
+            logger.info(f"Sample {index} of the training set: {self.datasets[index]}.")
            
         
         self.dataloader = DataLoader(
