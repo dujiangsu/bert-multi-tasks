@@ -36,7 +36,7 @@ batch_size = [24, 128, 4, 2]
 bs = 128
 batch_size_val = [109, 200, 200, 102]
 learning_rate = 0.00001
-eval_interval = 5000
+eval_interval = 10
 bert_path="/home/nsccgz_jiangsu/bert-models/distilbert-base-cased"
 cache_dir = os.path.join("/home/nsccgz_jiangsu/djs/output", model_name, "cache")
 model_save_dir = os.path.join("/home/nsccgz_jiangsu/djs/output", model_name,"saved_model")
@@ -203,7 +203,7 @@ def evaluate(main_model, sub_model, dataset, bs, metrics):
                 # token_type_ids = data['token_type_ids']
                 label = data['labels']
             
-            output_inter = main_model(input_ids=input_ids, attention_mask=attention_mask, return_dict=True) # , token_type_ids=token_type_ids
+            output_inter = main_model(input_ids=input_ids, attention_mask=attention_mask, return_dict=True)
             output = sub_model(input=output_inter, labels=label)
             loss = output[0].cpu().numpy().tolist()
             label = label.cpu().numpy().tolist()
