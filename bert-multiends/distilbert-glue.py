@@ -38,8 +38,8 @@ batch_size_val = [109, 200, 200, 102]
 learning_rate = 0.00001
 eval_interval = 5000
 bert_path="/home/nsccgz_jiangsu/bert-models/distilbert-base-cased"
-cache_dir = "/home/nsccgz_jiangsu/djs/output/"+model_name+"/cache"
-model_save_dir = "/home/nsccgz_jiangsu/djs/output/"+model_name+"saved_model/"
+cache_dir = os.path.join("/home/nsccgz_jiangsu/djs/output", model_name, "cache")
+model_save_dir = os.path.join("/home/nsccgz_jiangsu/djs/output", model_name,"saved_model")
 
 
 # Define what tasks to train
@@ -162,15 +162,15 @@ def main():
         if (i % eval_interval == 0):
             for j in range(ntasks):
                 evaluate(Bert_model, sub_models[j], dev_iter[j], batch_size_val[j], metrics[j])
-                sub_models[j].save_pretrained(model_save_dir + tasks[j]+"-"+i)
-            Bert_model.save_pretrained(model_save_dir + "main"+"-"+i)
+                sub_models[j].save_pretrained(os.path.join(model_save_dir, "{}-checkpoint-{:06}.pth.tar".format(tasks[j], i)))
+            Bert_model.save_pretrained(os.path.join(model_save_dir, "{}-checkpoint-{:06}.pth.tar".format("main", i)))
     
     
     for i in range(ntasks):
         evaluate(Bert_model, sub_models[i], dev_iter[i], batch_size_val[i], metrics[i])
-        sub_models[i].save_pretrained(model_save_dir+tasks[i]+"-"+iterations)
+        sub_models[i].save_pretrained(os.path.join(model_save_dir, "{}-checkpoint-{:06}.pth.tar".format(tasks[j], iterations)))
             
-    Bert_model.save_pretrained(model_save_dir+"main"+"-"+iterations)    
+    Bert_model.save_pretrained(os.path.join(model_save_dir, "{}-checkpoint-{:06}.pth.tar".format("main", iterations)))    
     
     
 
@@ -195,15 +195,15 @@ def evaluate(main_model, sub_model, dataset, bs, metrics):
             if use_gpu:        
                 input_ids = data['input_ids'].cuda()
                 attention_mask = data['attention_mask'].cuda()
-                token_type_ids = data['token_type_ids'].cuda()
+                # token_type_ids = data['token_type_ids'].cuda()
                 label = data['labels'].cuda()
             else:
                 input_ids = data['input_ids']
                 attention_mask = data['attention_mask']
-                token_type_ids = data['token_type_ids']
+                # token_type_ids = data['token_type_ids']
                 label = data['labels']
             
-            output_inter = main_model(input_ids=input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids, return_dict=True)
+            output_inter = main_model(input_ids=input_ids, attention_mask=attention_mask, return_dict=True) # , token_type_ids=token_type_ids
             output = sub_model(input=output_inter, labels=label)
             loss = output[0].cpu().numpy().tolist()
             label = label.cpu().numpy().tolist()
