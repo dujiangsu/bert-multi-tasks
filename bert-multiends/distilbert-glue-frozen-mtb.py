@@ -31,12 +31,13 @@ logger = logging.getLogger(__name__)
 
 # Hyperparameters
 epochs = 20
-model_name="distilbert-base-cased"
+model_name="distilbert-base-cased-frozen-mtb"
 batch_size = [24, 128, 4, 2]
 bs = 128
 batch_size_val = [109, 200, 200, 102]
 learning_rate = 0.00001
 eval_interval = 5000
+frozen = 10000 # set 0 to prevent frozen the main model
 bert_path="/home/nsccgz_jiangsu/bert-models/distilbert-base-cased"
 cache_dir = os.path.join("/home/nsccgz_jiangsu/djs/output", model_name, "cache")
 model_save_dir = os.path.join("/home/nsccgz_jiangsu/djs/output", model_name,"saved_model")
@@ -121,9 +122,22 @@ def main():
         sub_scheduler.append(torch.optim.lr_scheduler.LambdaLR(sub_optimizer[i], lambda step: (1.0-step/iterations)))    
     Bert_scheduler = torch.optim.lr_scheduler.LambdaLR(bert_optimizer, lambda step: (1.0-step/iterations))
     
+    
     for i in range(1, iterations+1):
-        Bert_model.train()
+        
+        
+        if iterations > frozen:
+            for p in Bert_model.parameters():
+                p.requires_grad = True
+            Bert_model.train()
+            
+        else:
+            for p in Bert_model.parameters():
+                p.requires_grad = False
+            Bert_model.eval()
+        
         losses=list()
+        loss_rates=list()
         for j in range(ntasks):
             sub_models[j].train()
             data = train_iter[j].next()
@@ -141,23 +155,34 @@ def main():
                 
             output_inter = Bert_model(input_ids=input_ids, attention_mask=attention_mask, return_dict=True) # token_type_ids=token_type_ids,
             losses.append(sub_models[j](input=output_inter, labels=label)[0])
-            
+   
+        
+        losssum = sum(losses).item()     
+        for j in range(ntasks):
+            loss_rates.append(losses[j].item()/losssum)
+        
         loss = 0
         printInfo = 'TOTAL/Train {}/{}, lr:{}'.format(i, iterations, Bert_scheduler.get_lr())
         for j in range(ntasks):
-            loss += losses[j] * batch_size[j]
+            loss += losses[j] * batch_size[j] * loss_rates[j]
             printInfo += ', loss{}-{:.6f}'.format(j,losses[j])
             sub_optimizer[j].zero_grad()
             
-        logging.info(printInfo)   
-        bert_optimizer.zero_grad()
+        logging.info(printInfo) 
+        
+        if iterations > frozen:
+            bert_optimizer.zero_grad()
         loss.backward()
         
-        bert_optimizer.step()
+        if iterations > frozen:
+            bert_optimizer.step()
+            
         for j in range(ntasks):
             sub_optimizer[j].step()
             sub_scheduler[j].step()
-        Bert_scheduler.step()
+        
+        if iterations > frozen:
+            Bert_scheduler.step()
         
         if (i % eval_interval == 0):
             for j in range(ntasks):

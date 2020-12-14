@@ -10,8 +10,8 @@ class SequenceClassification(BertPreTrainedModel):
         super().__init__(config)
         self.num_labels = config.num_labels
         self.pre_classifier = nn.Linear(config.dim, config.dim)
-        self.classifier = nn.Linear(config.dim, config.num_labels)
         self.dropout = nn.Dropout(config.seq_classif_dropout)
+        self.classifier = nn.Linear(config.dim, config.num_labels)
         
         self.init_weights()
         
