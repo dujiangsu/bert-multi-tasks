@@ -17,7 +17,7 @@ import torch
 import time
 import numpy as np
 from torch import nn
-from downstream_distilbert import SequenceClassification
+from downstreamadd_distilbert import SequenceClassification
 from data import GlueDataArgs, DataIterator, ComputeMetrics
 # from transformers import BertConfig, BertTokenizer, BertModel
 from transformers import DistilBertConfig, DistilBertTokenizer, DistilBertModel
@@ -31,14 +31,14 @@ logger = logging.getLogger(__name__)
 
 # Hyperparameters
 epochs = 20
-model_name="sst2-nmli-sstb-qnli-distilbert-frozen-mtb-3"
+model_name="sst2-nmli-sstb-qnli-distilbert-frozen-mtb-moreend"
 batch_size = [44, 256, 5, 71]
 bs = 256
 batch_size_val = [218, 200, 100, 190]
 learning_rate_0 = 0.0001
 learning_rate_1 = 0.2
-eval_interval = 3000
-frozen = 10000 # set 0 to prevent frozen the main model
+eval_interval = 2000
+frozen = 6000 # set 0 to prevent frozen the main model
 bert_path="/home/nsccgz_jiangsu/bert-models/distilbert-base-cased"
 cache_dir = os.path.join("/home/nsccgz_jiangsu/djs/output", model_name, "cache")
 model_save_dir = os.path.join("/home/nsccgz_jiangsu/djs/output", model_name,"saved_model")
