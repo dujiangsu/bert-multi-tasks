@@ -187,6 +187,8 @@ def evaluate(main_model, sub_model, dataset, metrics):
             sub_model.eval()
             data = dataset.next()
 
+
+
             if use_gpu:        
                 input_ids = data['input_ids'].cuda()
                 attention_mask = data['attention_mask'].cuda()
@@ -204,8 +206,12 @@ def evaluate(main_model, sub_model, dataset, metrics):
             label = label.cpu().numpy().tolist()
             softmax_layer = torch.nn.Softmax(dim=1)
 
-            # only for 2-classification task
-            pred = np.round(softmax_layer(output.logits).cpu().t()[1].numpy()).tolist()
+            if metrics.num_labels == 3:                
+                pred = [x.index(max(x)) for x in output.logits.cpu().numpy().tolist()]
+            elif metrics.num_labels == 2:
+                pred = np.round(softmax_layer(output.logits).cpu().t()[1].numpy()).tolist()
+            elif metrics.num_labels == 1:
+                pred = output.logits.cpu().t().numpy().tolist()[0]
 
             all_loss.append(loss.item())
             all_labels += label
@@ -218,7 +224,6 @@ def evaluate(main_model, sub_model, dataset, metrics):
     for i in eval_result:
         printInfo = "{:s} = {:.6f}".format(i, eval_result[i])
         logging.info(printInfo)
-
 
     
 if __name__ == "__main__":
