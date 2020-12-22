@@ -5,6 +5,7 @@ import torch
 import time
 import numpy as np
 from torch import nn
+import argparse
 from downstream import SequenceClassification
 from data import GlueDataArgs, GlueDataSets, ComputeMetrics, GlueIterator
 # from transformers import BertConfig, BertTokenizer, BertModel
@@ -14,6 +15,11 @@ from transformers import (
     glue_tasks_num_labels
     )
        
+
+parser = argparse.ArgumentParser(description='manual to this script')
+parser.add_argument('--learning-rate', type=float, default=0.00001)
+# parser.add_argument('--batch-size', type=int, default=32)
+args = parser.parse_args()
     
 logger = logging.getLogger(__name__)
 
@@ -22,13 +28,13 @@ logger = logging.getLogger(__name__)
 tasks = ["SST-2", "MNLI", "STS-B", "QNLI"]
 # Train 67k 393k 7k 108k   [67349, 392702, 5749, 104743]
 # dev   872 20k  1.5k  5.7k
-epochs = 10
-model_name="sst2-nmli-sstb-qnli-distilbert-baseline"
+epochs = 6
+model_name="sst2-nmli-sstb-qnli-distilbert-mtb-lr2"
 batch_size_train = [11, 64, 2, 19]
 batch_size_val = [1, 1, 1, 1]
 #batch_size = [44, 256, 5, 71]
 bs = 64
-learning_rate_0 = 0.00001
+learning_rate_0 = args.learning_rate
 learning_rate_1 = 0.2
 eval_interval = 1000
 # weight_decay
@@ -160,7 +166,7 @@ def main():
         loss = 0
         printInfo = 'TOTAL/Train {}/{}, lr:{}'.format(i, iterations, Bert_scheduler.get_lr())
         for j in range(ntasks):
-            loss += losses[j] * batch_size_train[j] # * loss_rates[j]
+            loss += losses[j] * batch_size_train[j] * loss_rates[j]
             printInfo += ', loss{}-{:.6f}'.format(j,losses[j])
             sub_optimizer[j].zero_grad()
             

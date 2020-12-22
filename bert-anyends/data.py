@@ -110,7 +110,7 @@ class GlueDataSets(object):
         
         
     
-    def iterator(self, mode, batch_size, mm="validation_matched"):
+    def dataloader(self, mode, batch_size, mm="validation_matched"):
     
         if(mode == "train"):
             temp = self.datasets["train"]
@@ -130,7 +130,7 @@ class GlueDataSets(object):
                         collate_fn=default_data_collator,
                         num_workers=4)
                 
-        return enumerate(dataloader)
+        return dataloader
     
     def length(self, mode, mm="validation_matched"):
         if(mode == "train"):
@@ -160,7 +160,19 @@ class GlueDataSets(object):
 
     # def __len__(self):
         # return len(self.datasets["train"])
- 
+
+class GlueIterator():
+    def __init__(self, dataloader):
+        self.dataloader = dataloader
+        self.iterator = enumerate(self.dataloader)
+    
+    def next(self):
+        try:
+            _, data = next(self.iterator)
+        except Exception:
+            self.iterator = enumerate(self.dataloader)
+            _, data = next(self.iterator)  
+        return data
         
         
 class ComputeMetrics():

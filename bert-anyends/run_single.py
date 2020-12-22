@@ -5,6 +5,7 @@ import torch
 import time
 import numpy as np
 from torch import nn
+import argparse
 from downstream import SequenceClassification
 from data import GlueDataArgs, GlueDataSets, ComputeMetrics, GlueIterator
 # from transformers import BertConfig, BertTokenizer, BertModel
@@ -14,21 +15,27 @@ from transformers import (
     glue_tasks_num_labels
     )
        
+
+parser = argparse.ArgumentParser(description='manual to this script')
+parser.add_argument('--learning-rate', type=float, default=0.00001)
+# parser.add_argument('--batch-size', type=int, default=32)
+args = parser.parse_args()
     
 logger = logging.getLogger(__name__)
 
 # Hyperparameters
 # Define what tasks to train
-tasks = ["SST-2", "MNLI", "STS-B", "QNLI"]
+tasks = ["MNLI"] #, "MNLI", "STS-B", "QNLI"
 # Train 67k 393k 7k 108k   [67349, 392702, 5749, 104743]
 # dev   872 20k  1.5k  5.7k
-epochs = 10
-model_name="sst2-nmli-sstb-qnli-distilbert-baseline"
-batch_size_train = [11, 64, 2, 19]
+epochs = 6
+model_name="sst2"
+# batch_size_train = [11, 64, 2, 19]
+batch_size_train = [64]
 batch_size_val = [1, 1, 1, 1]
 #batch_size = [44, 256, 5, 71]
 bs = 64
-learning_rate_0 = 0.00001
+learning_rate_0 = args.learning_rate
 learning_rate_1 = 0.2
 eval_interval = 1000
 # weight_decay
@@ -105,8 +112,8 @@ def main():
     
     sub_scheduler = list()
     for i in range(ntasks):
-        sub_scheduler.append(torch.optim.lr_scheduler.LambdaLR(sub_optimizer[i], lambda step: (1.0-step/iterations) if step <= frozen else learning_rate_1))    
-    Bert_scheduler = torch.optim.lr_scheduler.LambdaLR(bert_optimizer, lambda step: (1.0-step/iterations) if step <= frozen else learning_rate_1)
+        sub_scheduler.append(torch.optim.lr_scheduler.LambdaLR(sub_optimizer[i], lambda step: (1.0-step/iterations))) #if step <= frozen else learning_rate_1)    
+    Bert_scheduler = torch.optim.lr_scheduler.LambdaLR(bert_optimizer, lambda step: (1.0-step/iterations))# if step <= frozen else learning_rate_1
     
     # datasets[i].dataloader("train", batch_size_train[i])
     train_iter = list()
@@ -175,9 +182,9 @@ def main():
             
         for j in range(ntasks):
             sub_optimizer[j].step()
-            #sub_scheduler[j].step()
+            # sub_scheduler[j].step()
         
-        #Bert_scheduler.step()
+        # Bert_scheduler.step()
         
         if (i % eval_interval == 0):
             evaluate(Bert_model, sub_models, datasets, batch_size_val, metrics, ntasks)

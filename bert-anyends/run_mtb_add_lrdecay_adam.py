@@ -5,7 +5,8 @@ import torch
 import time
 import numpy as np
 from torch import nn
-from downstream import SequenceClassification
+import argparse
+from downstream_add import SequenceClassification
 from data import GlueDataArgs, GlueDataSets, ComputeMetrics, GlueIterator
 # from transformers import BertConfig, BertTokenizer, BertModel
 from transformers import DistilBertConfig, DistilBertTokenizer, DistilBertModel
@@ -14,6 +15,11 @@ from transformers import (
     glue_tasks_num_labels
     )
        
+
+parser = argparse.ArgumentParser(description='manual to this script')
+parser.add_argument('--learning-rate', type=float, default=0.00001)
+# parser.add_argument('--batch-size', type=int, default=32)
+args = parser.parse_args()
     
 logger = logging.getLogger(__name__)
 
@@ -22,17 +28,18 @@ logger = logging.getLogger(__name__)
 tasks = ["SST-2", "MNLI", "STS-B", "QNLI"]
 # Train 67k 393k 7k 108k   [67349, 392702, 5749, 104743]
 # dev   872 20k  1.5k  5.7k
-epochs = 10
-model_name="sst2-nmli-sstb-qnli-distilbert-baseline"
-batch_size_train = [11, 64, 2, 19]
+epochs = 6
+model_name="sst2-nmli-sstb-qnli-distilbert-mtb-lr2"
+# batch_size_train = [11, 64, 2, 19]
+batch_size_train = [22, 128, 4, 38]
 batch_size_val = [1, 1, 1, 1]
 #batch_size = [44, 256, 5, 71]
-bs = 64
-learning_rate_0 = 0.00001
+bs = 128
+learning_rate_0 = args.learning_rate
 learning_rate_1 = 0.2
 eval_interval = 1000
 # weight_decay
-frozen = 0 # set 0 to prevent frozen the main model
+frozen = 6000 # set 0 to prevent frozen the main model
 bert_path="/home/nsccgz_jiangsu/bert-models/distilbert-base-cased"
 cache_dir = os.path.join("/home/nsccgz_jiangsu/djs/output", model_name, "cache")
 model_save_dir = os.path.join("/home/nsccgz_jiangsu/djs/output", model_name,"saved_model")
@@ -90,7 +97,7 @@ def main():
     else:
         Bert_model = DistilBertModel.from_pretrained(bert_path, return_dict=True)
     
-    bert_optimizer = torch.optim.AdamW(Bert_model.parameters(), lr=learning_rate_0)
+    bert_optimizer = torch.optim.Adamax(Bert_model.parameters(), lr=learning_rate_0)
     
     
     # balaned dataset
@@ -105,8 +112,8 @@ def main():
     
     sub_scheduler = list()
     for i in range(ntasks):
-        sub_scheduler.append(torch.optim.lr_scheduler.LambdaLR(sub_optimizer[i], lambda step: (1.0-step/iterations) if step <= frozen else learning_rate_1))    
-    Bert_scheduler = torch.optim.lr_scheduler.LambdaLR(bert_optimizer, lambda step: (1.0-step/iterations) if step <= frozen else learning_rate_1)
+        sub_scheduler.append(torch.optim.lr_scheduler.LambdaLR(sub_optimizer[i], lambda step: 1 if step<=frozen else (1.0-step/iterations))) #if step <= frozen else learning_rate_1)    
+    Bert_scheduler = torch.optim.lr_scheduler.LambdaLR(bert_optimizer, lambda step: 1 if step<=frozen else (1.0-step/iterations))# if step <= frozen else learning_rate_1
     
     # datasets[i].dataloader("train", batch_size_train[i])
     train_iter = list()
@@ -155,12 +162,12 @@ def main():
         
         losssum = sum(losses).item()     
         for j in range(ntasks):
-            loss_rates.append(losses[j].item()/losssum)
+            loss_rates.append(4*losses[j].item()/losssum)
         
         loss = 0
         printInfo = 'TOTAL/Train {}/{}, lr:{}'.format(i, iterations, Bert_scheduler.get_lr())
         for j in range(ntasks):
-            loss += losses[j] * batch_size_train[j] # * loss_rates[j]
+            loss += losses[j] * batch_size_train[j] * loss_rates[j]
             printInfo += ', loss{}-{:.6f}'.format(j,losses[j])
             sub_optimizer[j].zero_grad()
             
@@ -175,16 +182,16 @@ def main():
             
         for j in range(ntasks):
             sub_optimizer[j].step()
-            #sub_scheduler[j].step()
+            sub_scheduler[j].step()
         
-        #Bert_scheduler.step()
+        Bert_scheduler.step()
         
         if (i % eval_interval == 0):
             evaluate(Bert_model, sub_models, datasets, batch_size_val, metrics, ntasks)
-            save_models(Bert_model, sub_models, ntasks, i)
+            # save_models(Bert_model, sub_models, ntasks, i)
     
     evaluate(Bert_model, sub_models, datasets, batch_size_val, metrics, ntasks)
-    save_models(Bert_model, sub_models, ntasks, iterations)
+    # save_models(Bert_model, sub_models, ntasks, iterations)
 
     
     
