@@ -17,7 +17,7 @@ from transformers import (
        
 
 parser = argparse.ArgumentParser(description='manual to this script')
-parser.add_argument('--learning-rate', type=float, default=0.00001)
+parser.add_argument('--learning-rate', type=float, default=0.00005) # good result
 # parser.add_argument('--batch-size', type=int, default=32)
 args = parser.parse_args()
     
@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 tasks = ["SST-2", "MNLI", "STS-B", "QNLI"]
 # Train 67k 393k 7k 108k   [67349, 392702, 5749, 104743]
 # dev   872 20k  1.5k  5.7k
-epochs = 6
+epochs = 8
 model_name="sst2-nmli-sstb-qnli-distilbert-mtb-lr2"
 # batch_size_train = [11, 64, 2, 19]
 batch_size_train = [44, 256, 8, 76]
@@ -36,7 +36,6 @@ batch_size_val = [1, 1, 1, 1]
 #batch_size = [44, 256, 5, 71]
 bs = 256
 learning_rate_0 = args.learning_rate
-learning_rate_1 = 0.2
 eval_interval = 1000
 # weight_decay
 frozen = 2000 # set 0 to prevent frozen the main model
@@ -162,7 +161,7 @@ def main():
         
         losssum = sum(losses).item()     
         for j in range(ntasks):
-            loss_rates.append(4*losses[j].item()/losssum)
+            loss_rates.append(losses[j].item()/losssum)
         
         loss = 0
         printInfo = 'TOTAL/Train {}/{}, lr:{}'.format(i, iterations, Bert_scheduler.get_lr())
@@ -182,9 +181,9 @@ def main():
             
         for j in range(ntasks):
             sub_optimizer[j].step()
-            sub_scheduler[j].step()
+            # sub_scheduler[j].step()
         
-        Bert_scheduler.step()
+        # Bert_scheduler.step()
         
         if (i % eval_interval == 0):
             evaluate(Bert_model, sub_models, datasets, batch_size_val, metrics, ntasks)
